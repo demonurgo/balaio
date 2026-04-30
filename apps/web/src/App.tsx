@@ -219,17 +219,23 @@ function App() {
                   selectFair(fairs[0]?.id ?? selectedFair.id);
                 }}
               >
-                <ShoppingBasket size={16} />
-                <span>Feira atual</span>
+                <span className="quick-action-icon">
+                  <ShoppingBasket size={18} />
+                </span>
+                <span className="quick-action-label">Feira atual</span>
               </button>
               <button className="quick-action" type="button" onClick={() => triggerHaptic("medium")}>
-                <Plus size={16} />
-                <span>Adicionar item</span>
+                <span className="quick-action-icon">
+                  <Plus size={18} />
+                </span>
+                <span className="quick-action-label">Adicionar item</span>
               </button>
               <button className="quick-action" type="button" onClick={() => triggerHaptic("selection")}>
-                <Circle size={16} />
-                <span>Faltando comprar</span>
-                <small>{pendingItemsCount}</small>
+                <span className="quick-action-icon">
+                  <Circle size={18} />
+                  <small className="quick-action-badge">{pendingItemsCount}</small>
+                </span>
+                <span className="quick-action-label">Faltando comprar</span>
               </button>
               <button
                 className="quick-action"
@@ -239,8 +245,10 @@ function App() {
                   document.getElementById("panorama")?.scrollIntoView({ behavior: "smooth", block: "start" });
                 }}
               >
-                <Wallet size={16} />
-                <span>Resumo</span>
+                <span className="quick-action-icon">
+                  <Wallet size={18} />
+                </span>
+                <span className="quick-action-label">Resumo</span>
               </button>
             </div>
 
