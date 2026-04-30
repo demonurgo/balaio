@@ -988,7 +988,7 @@ h2 {
     position: fixed;
     left: 20px;
     right: 20px;
-    bottom: 0;
+    bottom: 10px;
     z-index: 20;
     display: grid;
     grid-template-columns: repeat(4, 1fr);
