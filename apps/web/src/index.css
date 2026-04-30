@@ -846,6 +846,7 @@ h2 {
 
   .fair-row:last-child {
     border-bottom: 0;
+    margin-bottom: 0;
   }
 
   .fair-row > span:first-child {
