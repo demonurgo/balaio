@@ -14,6 +14,7 @@
 | 5 | Sharing And Permissions | Invite users, manage roles, enforce access server-side | SHARE-01..SHARE-05 | yes |
 | 6 | Realtime Collaboration | Wire Socket.IO rooms, events, presence, and conflict-safe UI updates | REAL-01..REAL-05 | yes |
 | 7 | Polish And Release | Finish responsive UI states, PWA behavior, tests, and release readiness | UI-01..UI-05 | yes |
+| 8 | Auth Simples Login Cadastro | Build simple email/password register, login, session, logout, validation, and tests | AUTH-01..AUTH-04 | yes |
 
 ## Phase Details
 
@@ -132,5 +133,16 @@
 
 All 35 v1 requirements map to exactly one phase.
 
+### Phase 8: Autenticacao simples com cadastro, login, validacoes e testes
+
+**Goal:** Criar autenticacao funcional e segura para cadastro, login, sessao persistente e logout, sem Google OAuth e sem fluxo de esqueci senha nesta fase.
+**Requirements**: AUTH-01, AUTH-02, AUTH-03, AUTH-04
+**Depends on:** Phase 7
+**Plans:** 2 plans
+
+Plans:
+- [ ] 08-01 API auth, banco, sessoes, rate limit e testes
+- [ ] 08-02 Tela de login/cadastro, validacoes inline e integracao
+
 ---
-*Last updated: 2026-04-30 after initialization*
+*Last updated: 2026-04-30 after planning Phase 8*
