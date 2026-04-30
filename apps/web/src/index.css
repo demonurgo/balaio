@@ -325,6 +325,116 @@ h2 {
   color: var(--color-muted);
 }
 
+.dashboard-charts {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
+}
+
+.mini-chart {
+  display: grid;
+  gap: 8px;
+}
+
+.chart-label,
+.category-row {
+  display: grid;
+  align-items: center;
+  gap: 8px;
+}
+
+.chart-label {
+  grid-template-columns: minmax(0, 1fr) auto;
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.chart-label strong,
+.category-row strong {
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-label strong {
+  font-size: 13px;
+}
+
+.chart-track,
+.category-track {
+  display: block;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-border) 78%, transparent);
+}
+
+.chart-track {
+  height: 6px;
+}
+
+.chart-track span,
+.category-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-primary);
+}
+
+.mini-chart small {
+  color: var(--color-muted);
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.trend-chart {
+  display: block;
+  width: 100%;
+  height: 56px;
+}
+
+.trend-grid {
+  stroke: var(--color-border);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.trend-line {
+  fill: none;
+  stroke: var(--color-primary);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;
+}
+
+.trend-dot {
+  fill: var(--color-bg);
+  stroke: var(--color-primary);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.category-bars {
+  display: grid;
+  gap: 7px;
+}
+
+.category-row {
+  grid-template-columns: 64px minmax(0, 1fr) auto;
+  color: var(--color-muted);
+  font-size: 11px;
+}
+
+.category-track {
+  height: 5px;
+}
+
+.category-row strong {
+  font-size: 11px;
+  font-weight: 600;
+}
+
 .fair-header {
   padding: 18px;
   border-bottom: 1px solid var(--color-border);
@@ -727,6 +837,24 @@ h2 {
     margin-top: 8px;
     background: #e8e5de;
     box-shadow: 0 3px 12px rgba(20, 38, 31, 0.08);
+  }
+
+  .dashboard-charts {
+    gap: 12px;
+    margin-top: 2px;
+    padding-top: 14px;
+  }
+
+  .mini-chart {
+    gap: 7px;
+  }
+
+  .trend-chart {
+    height: 48px;
+  }
+
+  .category-row {
+    grid-template-columns: 58px minmax(0, 1fr) auto;
   }
 
   .fair-header {

@@ -21,6 +21,7 @@ import {
 import type { ReactNode } from "react";
 import { useMemo } from "react";
 import { useFairStore } from "./state/useFairStore";
+import type { Fair, FairItem } from "./state/useFairStore";
 import { useThemeStore } from "./state/useThemeStore";
 
 const emptyFair = {
@@ -38,6 +39,7 @@ function App() {
   const items = useFairStore((state) => state.itemsByFair[selectedFairId] ?? []);
   const togglePurchased = useFairStore((state) => state.togglePurchased);
   const selectedFair = fairs.find((fair) => fair.id === selectedFairId) ?? fairs[0] ?? emptyFair;
+  const latestFairs = useMemo(() => fairs.slice(0, 3), [fairs]);
   const theme = useThemeStore((state) => state.theme);
   const toggleTheme = useThemeStore((state) => state.toggleTheme);
   const logoSrc =
@@ -122,7 +124,7 @@ function App() {
             </div>
 
             <div className="fair-list">
-              {fairs.map((fair) => {
+              {latestFairs.map((fair) => {
                 const isActive = fair.id === selectedFairId;
                 const progress = Math.min(Math.round((fair.total / fair.budget) * 100), 100);
 
@@ -149,6 +151,8 @@ function App() {
                 );
               })}
             </div>
+
+            <DashboardCharts fairs={fairs} items={items} selectedFair={selectedFair} />
           </section>
 
           <section className="fair-panel">
@@ -272,6 +276,81 @@ type MetricProps = {
   tone?: "success" | "danger";
 };
 
+type DashboardChartsProps = {
+  fairs: Fair[];
+  items: FairItem[];
+  selectedFair: Fair;
+};
+
+function DashboardCharts({ fairs, items, selectedFair }: DashboardChartsProps) {
+  const budgetPercent = getPercent(selectedFair.total, selectedFair.budget);
+  const categoryTotals = getCategoryTotals(items);
+  const trendFairs = fairs.slice(0, 4).reverse();
+
+  return (
+    <div className="dashboard-charts" aria-label="Graficos da feira">
+      <section className="mini-chart" aria-label="Orcamento usado">
+        <div className="chart-label">
+          <span>Orcamento</span>
+          <strong>{budgetPercent}%</strong>
+        </div>
+        <span className="chart-track" aria-hidden="true">
+          <span style={{ width: `${budgetPercent}%` }} />
+        </span>
+        <small>{formatCurrency(selectedFair.total)} usados</small>
+      </section>
+
+      <section className="mini-chart" aria-label="Ultimos meses">
+        <div className="chart-label">
+          <span>Ultimos meses</span>
+          <strong>{formatCurrency(selectedFair.total)}</strong>
+        </div>
+        <MiniTrendChart fairs={trendFairs} />
+      </section>
+
+      <section className="mini-chart" aria-label="Categorias">
+        <div className="chart-label">
+          <span>Categorias</span>
+          <strong>{categoryTotals.length}</strong>
+        </div>
+        <div className="category-bars">
+          {categoryTotals.map((category) => (
+            <div className="category-row" key={category.label}>
+              <span>{category.label}</span>
+              <span className="category-track" aria-hidden="true">
+                <span style={{ width: `${category.percent}%` }} />
+              </span>
+              <strong>{formatCurrency(category.total)}</strong>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function MiniTrendChart({ fairs }: { fairs: Fair[] }) {
+  const values = fairs.map((fair) => fair.total);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+  const points = values.map((value, index) => ({
+    x: values.length === 1 ? 80 : (index / (values.length - 1)) * 160,
+    y: 46 - ((value - min) / range) * 34
+  }));
+  const polyline = points.map((point) => `${point.x},${point.y}`).join(" ");
+
+  return (
+    <svg className="trend-chart" viewBox="0 0 160 56" role="img" aria-label="Evolucao de gastos">
+      <line className="trend-grid" x1="0" x2="160" y1="46" y2="46" />
+      <polyline className="trend-line" points={polyline} />
+      {points.map((point) => (
+        <circle className="trend-dot" cx={point.x} cy={point.y} key={`${point.x}-${point.y}`} r="3" />
+      ))}
+    </svg>
+  );
+}
+
 function Metric({ label, value, icon, tone }: MetricProps) {
   return (
     <div className={tone ? `metric ${tone}` : "metric"}>
@@ -280,6 +359,56 @@ function Metric({ label, value, icon, tone }: MetricProps) {
       <strong>{value}</strong>
     </div>
   );
+}
+
+function getCategoryTotals(items: FairItem[]) {
+  const totals = new Map<string, number>();
+
+  items.forEach((item) => {
+    const category = getItemCategory(item.name);
+    totals.set(category, (totals.get(category) ?? 0) + item.totalPrice);
+  });
+
+  const categories = Array.from(totals, ([label, total]) => ({ label, total }))
+    .sort((left, right) => right.total - left.total)
+    .slice(0, 4);
+  const max = Math.max(...categories.map((category) => category.total), 1);
+
+  return categories.map((category) => ({
+    ...category,
+    percent: getPercent(category.total, max)
+  }));
+}
+
+function getItemCategory(name: string) {
+  const normalized = name.toLowerCase();
+
+  if (normalized.includes("leite") || normalized.includes("cafe")) {
+    return "Bebidas";
+  }
+
+  if (normalized.includes("pao")) {
+    return "Padaria";
+  }
+
+  if (
+    normalized.includes("arroz") ||
+    normalized.includes("feijao") ||
+    normalized.includes("acucar") ||
+    normalized.includes("oleo")
+  ) {
+    return "Basicos";
+  }
+
+  return "Outros";
+}
+
+function getPercent(value: number, total: number) {
+  if (total <= 0) {
+    return 0;
+  }
+
+  return Math.min(Math.round((value / total) * 100), 100);
 }
 
 function formatCurrency(value: number) {

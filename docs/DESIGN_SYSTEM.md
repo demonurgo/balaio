@@ -298,6 +298,10 @@ Cada linha deve mostrar:
 - barra de progresso
 - status se passou do orcamento
 
+Dashboard:
+
+- mostrar somente as 3 feiras mais recentes
+
 Preferir linha com divisores, nao card pesado.
 
 ### Feira Aberta
