@@ -912,6 +912,7 @@ h2 {
     gap: 12px;
     margin-top: 2px;
     padding-top: 14px;
+    border-top: 0;
   }
 
   .dashboard-heading h2 {
