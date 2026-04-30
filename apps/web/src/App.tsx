@@ -210,6 +210,10 @@ function App() {
               })}
             </div>
 
+            <div className="dashboard-heading quick-actions-heading">
+              <h2>Acoes rapidas</h2>
+            </div>
+
             <div className="quick-actions" aria-label="Acessos rapidos">
               <button
                 className="quick-action"

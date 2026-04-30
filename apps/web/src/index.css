@@ -387,7 +387,12 @@ h2 {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
+  margin-top: 10px;
+}
+
+.quick-actions-heading {
   margin-top: 18px;
+  margin-bottom: 0;
 }
 
 .quick-action {
@@ -1198,8 +1203,12 @@ h2 {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 8px;
-    margin: 12px 0 0;
+    margin: 10px 0 0;
     padding-bottom: 6px;
+  }
+
+  .quick-actions-heading {
+    margin-top: 16px;
   }
 
   .quick-action {
