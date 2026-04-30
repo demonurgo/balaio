@@ -443,6 +443,7 @@ type ProfilePageProps = {
 };
 
 function ProfilePage({ user, fairsCount, itemsCount, logout, theme, toggleTheme }: ProfilePageProps) {
+  const [copied, setCopied] = useState(false);
   const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(" ") || user?.name || "Perfil Balaio";
   const firstName = user?.firstName || fullName.split(" ")[0] || "Perfil";
   const lastName = user?.lastName || fullName.split(" ").slice(1).join(" ") || "Balaio";
@@ -491,10 +492,21 @@ function ProfilePage({ user, fairsCount, itemsCount, logout, theme, toggleTheme 
           onClick={() => {
             triggerHaptic("selection");
             void navigator.clipboard?.writeText(profileCode);
+            setCopied(true);
+            window.setTimeout(() => setCopied(false), 1400);
           }}
         >
           <strong>{profileCode}</strong>
-          <span>Copiar</span>
+          <span className={copied ? "profile-copy-label copied" : "profile-copy-label"} aria-live="polite">
+            {copied ? (
+              <>
+                <Check size={15} />
+                Copiado
+              </>
+            ) : (
+              "Copiar"
+            )}
+          </span>
         </button>
       </section>
 

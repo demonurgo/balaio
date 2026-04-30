@@ -954,6 +954,38 @@ h2 {
   font-variant-numeric: tabular-nums;
 }
 
+.profile-copy-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 74px;
+  justify-content: flex-end;
+}
+
+.profile-copy-label.copied {
+  animation: copyPop 340ms ease;
+}
+
+.profile-copy-label svg {
+  stroke-width: 3;
+}
+
+@keyframes copyPop {
+  0% {
+    opacity: 0.5;
+    transform: scale(0.86);
+  }
+
+  70% {
+    transform: scale(1.08);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 .profile-section {
   display: grid;
   gap: 10px;
