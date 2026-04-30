@@ -937,8 +937,8 @@ h2 {
   justify-content: space-between;
   gap: 14px;
   width: 100%;
-  min-height: 46px;
-  padding: 0 18px;
+  min-height: 36px;
+  padding: 0 16px;
   border: 0;
   border-radius: 999px;
   color: var(--color-logo-white);
@@ -948,7 +948,7 @@ h2 {
 
 .profile-pass strong,
 .profile-pass span {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
@@ -1556,7 +1556,7 @@ h2 {
   }
 
   .profile-pass {
-    min-height: 42px;
+    min-height: 34px;
     padding: 0 14px;
   }
 
