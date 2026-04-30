@@ -1,15 +1,33 @@
+import { WebHaptics } from "web-haptics";
+
 export type HapticTone = "light" | "selection" | "success";
 
-const patterns: Record<HapticTone, number | number[]> = {
-  light: 8,
-  selection: 12,
-  success: [10, 20, 14]
+const fallbackPatterns: Record<HapticTone, number | number[]> = {
+  light: 15,
+  selection: 8,
+  success: [30, 60, 40]
 };
 
+let haptics: WebHaptics | undefined;
+
+function getHaptics() {
+  if (typeof window === "undefined") {
+    return undefined;
+  }
+
+  haptics ??= new WebHaptics();
+  return haptics;
+}
+
 export function triggerHaptic(tone: HapticTone = "light") {
-  if (typeof navigator === "undefined" || !("vibrate" in navigator)) {
+  const engine = getHaptics();
+
+  if (engine && WebHaptics.isSupported) {
+    void engine.trigger(tone);
     return;
   }
 
-  navigator.vibrate(patterns[tone]);
+  if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+    navigator.vibrate(fallbackPatterns[tone]);
+  }
 }
