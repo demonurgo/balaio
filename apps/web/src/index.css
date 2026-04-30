@@ -327,10 +327,24 @@ h2 {
 
 .dashboard-charts {
   display: grid;
-  gap: 14px;
-  margin-top: 16px;
-  padding-top: 16px;
+  gap: 12px;
+  margin-top: 18px;
+  padding-top: 18px;
   border-top: 1px solid var(--color-border);
+}
+
+.dashboard-heading {
+  margin-bottom: 2px;
+}
+
+.dashboard-heading h2 {
+  font-size: 28px;
+}
+
+.chart-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 14px;
 }
 
 .mini-chart {
@@ -338,53 +352,76 @@ h2 {
   gap: 8px;
 }
 
-.chart-label,
-.category-row {
+.chart-label {
   display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
-}
-
-.chart-label {
-  grid-template-columns: minmax(0, 1fr) auto;
   color: var(--color-muted);
   font-size: 12px;
 }
 
-.chart-label strong,
-.category-row strong {
+.chart-label strong {
   color: var(--color-text);
+  font-size: 13px;
   font-variant-numeric: tabular-nums;
 }
 
-.chart-label strong {
-  font-size: 13px;
+.circle-panel {
+  align-content: start;
 }
 
-.chart-track,
-.category-track {
-  display: block;
-  overflow: hidden;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--color-border) 78%, transparent);
+.circle-chart-wrap {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 86px;
+  height: 86px;
+  justify-self: center;
 }
 
-.chart-track {
-  height: 6px;
+.circle-chart {
+  width: 86px;
+  height: 86px;
+  transform: rotate(-90deg);
 }
 
-.chart-track span,
-.category-track span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--color-primary);
+.circle-chart-bg,
+.circle-chart-progress {
+  fill: none;
+  stroke-width: 9;
+  vector-effect: non-scaling-stroke;
 }
 
-.mini-chart small {
+.circle-chart-bg {
+  stroke: color-mix(in srgb, var(--color-border) 78%, transparent);
+}
+
+.circle-chart-progress {
+  stroke: var(--color-primary);
+  stroke-linecap: round;
+}
+
+.circle-center {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 1px;
+  text-align: center;
+}
+
+.circle-center strong {
+  font-size: 16px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.circle-center span {
   color: var(--color-muted);
-  font-size: 11px;
-  line-height: 1.2;
+  font-size: 10px;
+  line-height: 1;
 }
 
 .trend-chart {
@@ -415,23 +452,37 @@ h2 {
   vector-effect: non-scaling-stroke;
 }
 
-.category-bars {
-  display: grid;
-  gap: 7px;
+.trend-hit {
+  fill: transparent;
 }
 
-.category-row {
-  grid-template-columns: 64px minmax(0, 1fr) auto;
+.trend-point {
+  cursor: pointer;
+  outline: none;
+}
+
+.trend-point.active .trend-dot,
+.trend-point:focus-visible .trend-dot {
+  fill: var(--color-primary);
+  stroke-width: 3;
+}
+
+.trend-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
   color: var(--color-muted);
   font-size: 11px;
+  line-height: 1.2;
 }
 
-.category-track {
-  height: 5px;
+.trend-meta strong,
+.trend-meta span {
+  font-variant-numeric: tabular-nums;
 }
 
-.category-row strong {
-  font-size: 11px;
+.trend-meta strong {
+  color: var(--color-text);
   font-weight: 600;
 }
 
@@ -845,16 +896,36 @@ h2 {
     padding-top: 14px;
   }
 
+  .dashboard-heading h2 {
+    font-size: 28px;
+    line-height: 1.08;
+  }
+
+  .chart-grid {
+    grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+    gap: 10px;
+  }
+
   .mini-chart {
     gap: 7px;
   }
 
-  .trend-chart {
-    height: 48px;
+  .chart-label {
+    font-size: 11px;
   }
 
-  .category-row {
-    grid-template-columns: 58px minmax(0, 1fr) auto;
+  .chart-label strong {
+    font-size: 12px;
+  }
+
+  .circle-chart-wrap,
+  .circle-chart {
+    width: 78px;
+    height: 78px;
+  }
+
+  .trend-chart {
+    height: 48px;
   }
 
   .fair-header {

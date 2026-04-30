@@ -231,19 +231,20 @@ Objetivo:
 
 Blocos recomendados:
 
-- resumo do mes: total atual, orcamento, restante e percentual usado
-- progresso de compras: itens comprados vs itens pendentes
+- secao chamada `Panorama`, com header visual igual a `Minhas feiras`
+- circulo de progresso: itens comprados vs itens pendentes
 - tendencia mensal: total dos ultimos meses em linha discreta
-- categorias principais: ate 4 barras compactas
 - alerta discreto apenas quando o orcamento estiver perto do limite ou estourado
 
 Graficos:
 
-- barra horizontal para progresso de orcamento
-- mini linha para evolucao dos ultimos meses
-- barras compactas para ate 4 categorias
-- sem donut no MVP, salvo se substituir a barra de orcamento
-- sem tooltips complexos, legenda grande ou eixo pesado
+- circulo pequeno para progresso de itens comprados
+- mini linha para evolucao dos ultimos meses, com pontos clicaveis
+- ao tocar/clicar num ponto, mostrar mes e valor
+- os 2 graficos devem ficar lado a lado
+- sem grafico de categorias no dashboard
+- sem barra horizontal de orcamento
+- sem tooltip complexo, legenda grande ou eixo pesado
 - graficos sempre baixos, silenciosos e integrados na lista
 
 Layout mobile:
@@ -258,7 +259,7 @@ Layout desktop:
 - lista de feiras a esquerda
 - feira aberta no centro/direita
 - resumo financeiro discreto lateral ou inferior
-- no maximo 3 graficos visiveis por tela
+- no maximo 2 graficos visiveis no dashboard
 
 Biblioteca:
 
