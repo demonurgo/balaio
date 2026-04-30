@@ -114,7 +114,6 @@ function App() {
           <section className="month-panel" id="feiras">
             <div className="section-heading">
               <div>
-                <p className="eyebrow">Mes</p>
                 <h1>Minhas feiras</h1>
               </div>
               <button className="icon-button" type="button" aria-label="Mais opcoes">
