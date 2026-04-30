@@ -884,12 +884,12 @@ h2 {
 
 .profile-avatar i {
   position: absolute;
-  top: -10px;
-  right: -12px;
+  top: -14px;
+  right: -28px;
   display: grid;
   place-items: center;
-  width: 46px;
-  height: 46px;
+  width: 54px;
+  height: 54px;
   border-radius: 0;
   color: var(--color-logo-white);
   background: transparent;
@@ -1581,8 +1581,10 @@ h2 {
   }
 
   .profile-avatar i {
-    width: 40px;
-    height: 40px;
+    top: -13px;
+    right: -23px;
+    width: 48px;
+    height: 48px;
   }
 
   .profile-identity h2 {
