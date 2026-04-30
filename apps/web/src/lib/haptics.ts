@@ -20,7 +20,7 @@ function getHaptics() {
     return undefined;
   }
 
-  haptics ??= new WebHaptics();
+  haptics ??= new WebHaptics({ showSwitch: true });
   return haptics;
 }
 
