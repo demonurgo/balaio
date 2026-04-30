@@ -58,10 +58,12 @@ function App() {
   const fairs = useFairStore((state) => state.fairs);
   const selectedFairId = useFairStore((state) => state.selectedFairId);
   const selectFair = useFairStore((state) => state.selectFair);
-  const items = useFairStore((state) => state.itemsByFair[selectedFairId] ?? []);
+  const itemsByFair = useFairStore((state) => state.itemsByFair);
+  const items = itemsByFair[selectedFairId] ?? [];
   const togglePurchased = useFairStore((state) => state.togglePurchased);
   const selectedFair = fairs.find((fair) => fair.id === selectedFairId) ?? fairs[0] ?? emptyFair;
   const latestFairs = useMemo(() => fairs.slice(0, 3), [fairs]);
+  const totalItemsCount = useMemo(() => Object.values(itemsByFair).reduce((count, fairItems) => count + fairItems.length, 0), [itemsByFair]);
   const pendingItemsCount = useMemo(() => items.filter((item) => !item.purchased).length, [items]);
   const theme = useThemeStore((state) => state.theme);
   const toggleTheme = useThemeStore((state) => state.toggleTheme);
@@ -186,7 +188,14 @@ function App() {
         </header>
 
         {view === "perfil" ? (
-          <ProfilePage user={user} logout={logout} theme={theme} toggleTheme={toggleTheme} />
+          <ProfilePage
+            user={user}
+            fairsCount={fairs.length}
+            itemsCount={totalItemsCount}
+            logout={logout}
+            theme={theme}
+            toggleTheme={toggleTheme}
+          />
         ) : (
         <div className="workspace">
           <section className="month-panel" id="feiras">
@@ -427,28 +436,25 @@ type DashboardChartsProps = {
 
 type ProfilePageProps = {
   user: ReturnType<typeof useAuthStore.getState>["user"];
+  fairsCount: number;
+  itemsCount: number;
   logout: () => Promise<void>;
   theme: "light" | "dark";
   toggleTheme: () => void;
 };
 
-function ProfilePage({ user, logout, theme, toggleTheme }: ProfilePageProps) {
+function ProfilePage({ user, fairsCount, itemsCount, logout, theme, toggleTheme }: ProfilePageProps) {
   const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(" ") || user?.name || "Perfil Balaio";
   const firstName = user?.firstName || fullName.split(" ")[0] || "Perfil";
   const lastName = user?.lastName || fullName.split(" ").slice(1).join(" ") || "Balaio";
   const birthDate = user?.birthDate ?? "";
-  const age = getAge(birthDate);
   const birthday = formatDate(birthDate);
   const initials = getInitials(firstName, lastName);
   const profileCode = getProfileCode(user?.id ?? "");
 
   return (
     <section className="profile-page" id="perfil" aria-label="Perfil">
-      <div className="section-heading profile-heading">
-        <h1>Perfil</h1>
-      </div>
-
-      <section className="profile-card" aria-label="Cartao do perfil">
+      <section className="profile-overview" aria-label="Resumo do perfil">
         <div className="profile-hero">
           <div className="profile-avatar" aria-hidden="true">
             <span>{initials}</span>
@@ -465,12 +471,12 @@ function ProfilePage({ user, logout, theme, toggleTheme }: ProfilePageProps) {
             </h2>
             <div className="profile-facts">
               <span>
-                <strong>Conta</strong>
-                <small>TIPO</small>
+                <strong>{itemsCount}</strong>
+                <small>ITENS</small>
               </span>
               <span>
-                <strong>{age}</strong>
-                <small>IDADE</small>
+                <strong>{fairsCount}</strong>
+                <small>FEIRAS</small>
               </span>
               <span>
                 <strong>{birthday}</strong>
@@ -686,26 +692,6 @@ function parseDate(value: string) {
   }
 
   return new Date(year, month - 1, day);
-}
-
-function getAge(value: string) {
-  const birthDate = parseDate(value);
-
-  if (!birthDate) {
-    return "-";
-  }
-
-  const today = new Date();
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const hadBirthday =
-    today.getMonth() > birthDate.getMonth() ||
-    (today.getMonth() === birthDate.getMonth() && today.getDate() >= birthDate.getDate());
-
-  if (!hadBirthday) {
-    age -= 1;
-  }
-
-  return String(age);
 }
 
 function formatDate(value: string) {
