@@ -138,11 +138,11 @@ All 35 v1 requirements map to exactly one phase.
 **Goal:** Criar autenticacao funcional e segura para cadastro, login, sessao persistente e logout, sem Google OAuth e sem fluxo de esqueci senha nesta fase.
 **Requirements**: AUTH-01, AUTH-02, AUTH-03, AUTH-04
 **Depends on:** Phase 7
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 08-01 API auth, banco, sessoes, rate limit e testes
-- [ ] 08-02 Tela de login/cadastro, validacoes inline e integracao
+- [x] 08-01 API auth, banco, sessoes, rate limit e testes
+- [x] 08-02 Tela de login/cadastro, validacoes inline e integracao
 
 ---
 *Last updated: 2026-04-30 after planning Phase 8*
