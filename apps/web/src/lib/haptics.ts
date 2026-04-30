@@ -34,3 +34,10 @@ export function triggerHaptic(tone: HapticTone = "light") {
 
   void engine.trigger(tone);
 }
+
+export function triggerHapticDuration(ms: number, intensity = 0.6) {
+  const engine = getHaptics();
+  if (!engine) return;
+
+  void engine.trigger([{ duration: ms, intensity }]);
+}

@@ -6,12 +6,14 @@ import App from "./App.tsx";
 import "./index.css";
 import { installViewportGuards } from "./installViewportGuards";
 import { primeHaptics } from "./lib/haptics";
+import { primeSound } from "./lib/sound";
 import { registerServiceWorker } from "./registerServiceWorker";
 
 const queryClient = new QueryClient();
 
 installViewportGuards();
 primeHaptics();
+primeSound();
 registerServiceWorker();
 
 createRoot(document.getElementById('root')!).render(

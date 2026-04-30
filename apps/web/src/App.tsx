@@ -19,8 +19,9 @@ import {
   Wallet
 } from "lucide-react";
 import type { KeyboardEvent, ReactNode } from "react";
-import { useMemo, useState } from "react";
-import { triggerHaptic } from "./lib/haptics";
+import { useMemo, useRef, useState } from "react";
+import { triggerHaptic, triggerHapticDuration } from "./lib/haptics";
+import { playSound } from "./lib/sound";
 import { useFairStore } from "./state/useFairStore";
 import type { Fair, FairItem } from "./state/useFairStore";
 import { useThemeStore } from "./state/useThemeStore";
@@ -56,12 +57,33 @@ function App() {
     return { total, remaining, percent };
   }, [items, selectedFair.budget]);
 
+  const desktopBrandRef = useRef<HTMLImageElement>(null);
+  const mobileBrandRef = useRef<HTMLImageElement>(null);
+
+  const handleLogoClick = () => {
+    triggerHapticDuration(590, 0.65);
+    playSound("logo");
+    const keyframes: Keyframe[] = [
+      { transform: "translateX(0) rotate(0deg)" },
+      { transform: "translateX(-3px) rotate(-2deg)", offset: 0.15 },
+      { transform: "translateX(3px) rotate(2deg)", offset: 0.3 },
+      { transform: "translateX(-3px) rotate(-2deg)", offset: 0.45 },
+      { transform: "translateX(3px) rotate(2deg)", offset: 0.6 },
+      { transform: "translateX(-2px) rotate(-1deg)", offset: 0.75 },
+      { transform: "translateX(2px) rotate(1deg)", offset: 0.9 },
+      { transform: "translateX(0) rotate(0deg)" }
+    ];
+    const opts: KeyframeAnimationOptions = { duration: 590, easing: "ease-in-out" };
+    desktopBrandRef.current?.animate(keyframes, opts);
+    mobileBrandRef.current?.animate(keyframes, opts);
+  };
+
   return (
     <main className="app-shell">
       <aside className="sidebar">
-        <div className="brand">
-          <img src={logoSrc} alt="Balaio" />
-        </div>
+        <button type="button" className="brand brand-button" onClick={handleLogoClick} aria-label="Balaio">
+          <img ref={desktopBrandRef} src={logoSrc} alt="Balaio" />
+        </button>
 
         <nav className="nav-list" aria-label="Principal">
           <a className="nav-item active" href="#feiras" onClick={() => triggerHaptic("selection")}>
@@ -90,9 +112,9 @@ function App() {
 
       <section className="content">
         <header className="topbar">
-          <div className="mobile-brand">
-            <img src={logoSrc} alt="Balaio" />
-          </div>
+          <button type="button" className="mobile-brand brand-button" onClick={handleLogoClick} aria-label="Balaio">
+            <img ref={mobileBrandRef} src={logoSrc} alt="Balaio" />
+          </button>
           <div className="collaborators" aria-label="Pessoas online">
             <span className="avatar">MA</span>
             <span className="avatar">JR</span>
