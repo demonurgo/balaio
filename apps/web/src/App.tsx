@@ -47,6 +47,7 @@ function App() {
   const togglePurchased = useFairStore((state) => state.togglePurchased);
   const selectedFair = fairs.find((fair) => fair.id === selectedFairId) ?? fairs[0] ?? emptyFair;
   const latestFairs = useMemo(() => fairs.slice(0, 3), [fairs]);
+  const pendingItemsCount = useMemo(() => items.filter((item) => !item.purchased).length, [items]);
   const theme = useThemeStore((state) => state.theme);
   const toggleTheme = useThemeStore((state) => state.toggleTheme);
   const logoSrc =
@@ -209,6 +210,40 @@ function App() {
               })}
             </div>
 
+            <div className="quick-actions" aria-label="Acessos rapidos">
+              <button
+                className="quick-action"
+                type="button"
+                onClick={() => {
+                  triggerHaptic("selection");
+                  selectFair(fairs[0]?.id ?? selectedFair.id);
+                }}
+              >
+                <ShoppingBasket size={16} />
+                <span>Feira atual</span>
+              </button>
+              <button className="quick-action" type="button" onClick={() => triggerHaptic("medium")}>
+                <Plus size={16} />
+                <span>Adicionar item</span>
+              </button>
+              <button className="quick-action" type="button" onClick={() => triggerHaptic("selection")}>
+                <Circle size={16} />
+                <span>Faltando comprar</span>
+                <small>{pendingItemsCount}</small>
+              </button>
+              <button
+                className="quick-action"
+                type="button"
+                onClick={() => {
+                  triggerHaptic("selection");
+                  document.getElementById("panorama")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+              >
+                <Wallet size={16} />
+                <span>Resumo</span>
+              </button>
+            </div>
+
             <DashboardCharts fairs={fairs} items={items} selectedFair={selectedFair} />
           </section>
 
@@ -360,7 +395,7 @@ function DashboardCharts({ fairs, items, selectedFair }: DashboardChartsProps) {
   const purchasedPercent = getPercent(purchasedCount, items.length);
 
   return (
-    <section className="dashboard-charts" aria-label="Panorama da feira">
+    <section className="dashboard-charts" id="panorama" aria-label="Panorama da feira">
       <div className="dashboard-heading">
         <h2>Panorama</h2>
       </div>
