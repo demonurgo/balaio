@@ -1,6 +1,5 @@
 import {
   ArrowLeft,
-  BadgeCheck,
   CalendarDays,
   Check,
   CheckCircle2,
@@ -459,7 +458,7 @@ function ProfilePage({ user, fairsCount, itemsCount, logout, theme, toggleTheme 
           <div className="profile-avatar" aria-hidden="true">
             <span>{initials}</span>
             <i>
-              <BadgeCheck size={17} />
+              <Edit3 size={17} />
             </i>
           </div>
 
@@ -486,10 +485,17 @@ function ProfilePage({ user, fairsCount, itemsCount, logout, theme, toggleTheme 
           </div>
         </div>
 
-        <div className="profile-pass">
+        <button
+          className="profile-pass"
+          type="button"
+          onClick={() => {
+            triggerHaptic("selection");
+            void navigator.clipboard?.writeText(profileCode);
+          }}
+        >
           <strong>{profileCode}</strong>
-          <span>Ativa</span>
-        </div>
+          <span>Copiar</span>
+        </button>
       </section>
 
       <section className="profile-section" aria-label="Dados da conta">
