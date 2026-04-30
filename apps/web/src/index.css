@@ -9,11 +9,12 @@
   --color-success: #22c55e;
   --color-danger: #e64d2e;
   --color-warning: #f2b705;
-  --color-logo-white: #fffdf7;
+  --color-logo-white: #fdfaea;
   --color-elevated: #f2f1ee;
   --color-elevated-hover: #faf9f6;
   --color-icon: #14261f;
   --shadow-soft: 0 18px 60px rgba(20, 38, 31, 0.08);
+  --font-brand: "Caveat Brush", cursive;
   --font-ui: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color-scheme: light;
   color: var(--color-text);
@@ -31,7 +32,7 @@
   --color-elevated: #101613;
   --color-elevated-hover: #13241a;
   --color-border: #26352d;
-  --color-text: #f8f6ef;
+  --color-text: #fdfaea;
   --color-muted: #a8a69f;
   --color-tertiary: #6f746c;
   --color-primary: #22a55a;
@@ -246,14 +247,17 @@ p {
 }
 
 h1 {
+  font-family: var(--font-brand);
   font-size: 28px;
   line-height: 1.1;
-  font-weight: 700;
+  font-weight: 400;
 }
 
 h2 {
+  font-family: var(--font-brand);
   font-size: 26px;
   line-height: 1.1;
+  font-weight: 400;
 }
 
 .fair-list {
