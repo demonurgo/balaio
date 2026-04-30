@@ -459,6 +459,7 @@ function ProfilePage({ user, fairsCount, itemsCount, logout, theme, toggleTheme 
           <div className="profile-avatar" aria-hidden="true">
             <span>{initials}</span>
             <i>
+              <img src="/assets/star.svg" alt="" aria-hidden="true" />
               <Edit3 size={17} />
             </i>
           </div>

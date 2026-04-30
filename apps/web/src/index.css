@@ -884,17 +884,32 @@ h2 {
 
 .profile-avatar i {
   position: absolute;
-  top: -8px;
-  right: -10px;
+  top: -10px;
+  right: -12px;
   display: grid;
   place-items: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
+  width: 46px;
+  height: 46px;
+  border-radius: 0;
   color: var(--color-logo-white);
-  background: var(--color-primary);
-  box-shadow: 0 8px 22px rgba(20, 38, 31, 0.14);
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+}
+
+.profile-avatar i img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
   transform: rotate(12deg);
+}
+
+.profile-avatar i svg {
+  position: relative;
+  z-index: 1;
+  stroke-width: 2.5;
 }
 
 .profile-identity {
@@ -1566,9 +1581,8 @@ h2 {
   }
 
   .profile-avatar i {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
+    width: 40px;
+    height: 40px;
   }
 
   .profile-identity h2 {
