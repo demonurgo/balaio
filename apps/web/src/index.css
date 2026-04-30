@@ -51,7 +51,9 @@
 }
 
 html {
+  height: 100%;
   min-height: 100%;
+  background: #faf9f6;
   background: var(--color-bg);
   overscroll-behavior: none;
   scrollbar-width: none;
@@ -61,7 +63,9 @@ html {
 body {
   margin: 0;
   min-width: 320px;
+  height: 100%;
   min-height: 100dvh;
+  background: #faf9f6;
   background: var(--color-bg);
   overscroll-behavior: none;
   scrollbar-width: none;
@@ -94,13 +98,17 @@ a,
 }
 
 #root {
+  height: 100%;
   min-height: 100dvh;
+  background: #faf9f6;
+  background: var(--color-bg);
 }
 
 .app-shell {
   display: grid;
   grid-template-columns: 224px minmax(0, 1fr);
   min-height: 100dvh;
+  background: #faf9f6;
   background: var(--color-bg);
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
@@ -738,6 +746,9 @@ h2 {
 @media (max-width: 720px) {
   .app-shell {
     display: block;
+    min-height: 100vh;
+    min-height: 100dvh;
+    min-height: -webkit-fill-available;
     padding-inline: 0;
   }
 
@@ -986,15 +997,14 @@ h2 {
     position: fixed;
     left: 20px;
     right: 20px;
-    bottom: 0;
+    bottom: max(2px, calc(env(safe-area-inset-bottom) - 28px));
     z-index: 20;
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    min-height: calc(66px + env(safe-area-inset-bottom));
-    padding: 8px 10px max(8px, env(safe-area-inset-bottom));
+    min-height: 66px;
+    padding: 8px 10px;
     border: 1px solid color-mix(in srgb, var(--color-border) 76%, transparent);
-    border-bottom: 0;
-    border-radius: 34px 34px 0 0;
+    border-radius: 999px;
     background: color-mix(in srgb, var(--color-bg) 92%, white);
     box-shadow:
       0 20px 44px rgba(20, 38, 31, 0.18),
