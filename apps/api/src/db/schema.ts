@@ -1,6 +1,7 @@
 import { relations } from "drizzle-orm";
 import {
   boolean,
+  date,
   integer,
   numeric,
   pgEnum,
@@ -17,6 +18,9 @@ export const memberRole = pgEnum("member_role", ["owner", "editor", "viewer"]);
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: varchar("name", { length: 120 }).notNull(),
+  firstName: varchar("first_name", { length: 80 }).notNull().default(""),
+  lastName: varchar("last_name", { length: 80 }).notNull().default(""),
+  birthDate: date("birth_date").notNull().default("1900-01-01"),
   email: varchar("email", { length: 255 }).notNull().unique(),
   passwordHash: text("password_hash").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),

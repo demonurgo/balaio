@@ -7,10 +7,10 @@ import {
   Circle,
   Edit3,
   LayoutList,
+  LogOut,
   Moon,
   MoreHorizontal,
   Plus,
-  Settings,
   Share2,
   ShoppingBasket,
   Sun,
@@ -19,9 +19,11 @@ import {
   Wallet
 } from "lucide-react";
 import type { KeyboardEvent, ReactNode } from "react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { AuthScreen } from "./auth/AuthScreen";
 import { triggerHaptic, triggerHapticDuration } from "./lib/haptics";
 import { playSound } from "./lib/sound";
+import { useAuthStore } from "./state/useAuthStore";
 import { useFairStore } from "./state/useFairStore";
 import type { Fair, FairItem } from "./state/useFairStore";
 import { useThemeStore } from "./state/useThemeStore";
@@ -35,6 +37,9 @@ const emptyFair = {
 };
 
 function App() {
+  const authStatus = useAuthStore((state) => state.status);
+  const loadMe = useAuthStore((state) => state.loadMe);
+  const logout = useAuthStore((state) => state.logout);
   const fairs = useFairStore((state) => state.fairs);
   const selectedFairId = useFairStore((state) => state.selectedFairId);
   const selectFair = useFairStore((state) => state.selectFair);
@@ -48,6 +53,10 @@ function App() {
     theme === "dark"
       ? "/assets/logo/balaio-logo-horizontal-dark.svg"
       : "/assets/logo/balaio-logo-horizontal.svg";
+
+  useEffect(() => {
+    void loadMe();
+  }, [loadMe]);
 
   const totals = useMemo(() => {
     const total = items.reduce((sum, item) => sum + item.totalPrice, 0);
@@ -78,6 +87,18 @@ function App() {
     mobileBrandRef.current?.animate(keyframes, opts);
   };
 
+  if (authStatus === "loading") {
+    return (
+      <main className="auth-shell">
+        <img className="auth-logo loading" src={logoSrc} alt="Balaio" />
+      </main>
+    );
+  }
+
+  if (authStatus === "anonymous") {
+    return <AuthScreen />;
+  }
+
   return (
     <main className="app-shell">
       <aside className="sidebar">
@@ -104,9 +125,16 @@ function App() {
           </a>
         </nav>
 
-        <button className="nav-item settings" type="button" onClick={() => triggerHaptic("light")}>
-          <Settings size={19} />
-          Configuracoes
+        <button
+          className="nav-item settings"
+          type="button"
+          onClick={() => {
+            triggerHaptic("light");
+            void logout();
+          }}
+        >
+          <LogOut size={19} />
+          Sair
         </button>
       </aside>
 
@@ -131,6 +159,17 @@ function App() {
             title={theme === "dark" ? "Tema claro" : "Tema escuro"}
           >
             {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
+          <button
+            className="icon-button logout-icon"
+            type="button"
+            aria-label="Sair"
+            onClick={() => {
+              triggerHaptic("light");
+              void logout();
+            }}
+          >
+            <LogOut size={18} />
           </button>
           <button className="primary-button add-fair-button" type="button" onClick={() => triggerHaptic("medium")}>
             <Plus size={17} />
