@@ -986,7 +986,7 @@ h2 {
     position: fixed;
     left: 20px;
     right: 20px;
-    bottom: max(6px, calc(env(safe-area-inset-bottom) - 12px));
+    bottom: max(4px, calc(env(safe-area-inset-bottom) - 24px));
     z-index: 20;
     display: grid;
     grid-template-columns: repeat(4, 1fr);
