@@ -221,6 +221,53 @@ Icones necessarios:
 
 ## Componentes
 
+### Dashboard
+
+Objetivo:
+
+- dar nocao rapida de gasto, orcamento e ritmo da feira
+- mostrar progresso sem virar tela de relatorio pesado
+- favorecer acao imediata: abrir feira, marcar comprado, ajustar preco
+
+Blocos recomendados:
+
+- resumo do mes: total atual, orcamento, restante e percentual usado
+- progresso de compras: itens comprados vs itens pendentes
+- tendencia mensal: total dos ultimos meses em linha simples
+- comparativo por categoria: mercado, feira, limpeza, carnes, frutas etc.
+- maiores gastos: top 5 itens por valor total
+- alertas discretos: orcamento perto do limite, item muito acima do normal, preco faltando
+- atividade ao vivo: quem alterou, comprou ou esta editando
+- atalhos: importar mes anterior, adicionar item, compartilhar feira
+
+Graficos:
+
+- barra horizontal para progresso de orcamento
+- mini linha para evolucao mensal
+- barras compactas para categorias
+- donut/ring apenas para percentual de orcamento, sem excesso
+- evitar graficos grandes no mobile; priorizar numeros e micrograficos
+
+Layout mobile:
+
+- primeiro bloco deve ser a lista de feiras
+- metricas resumidas podem aparecer abaixo da lista ou numa aba Orcamento
+- graficos devem ocupar largura total e altura baixa
+- nao usar cards aninhados; usar divisores e secoes
+
+Layout desktop:
+
+- lista de feiras a esquerda
+- feira aberta no centro/direita
+- resumo financeiro lateral ou inferior
+- graficos pequenos, com leitura em 3 segundos
+
+Biblioteca:
+
+- comecar com SVG/CSS proprio para micrograficos
+- adicionar biblioteca de chart apenas se houver zoom, tooltip avancado ou filtros complexos
+- se entrar biblioteca, manter bundle baixo e renderizacao simples
+
 ### Botao Primario
 
 - fundo `--color-primary`
