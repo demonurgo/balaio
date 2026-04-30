@@ -635,14 +635,13 @@ h2 {
   }
 
   .section-heading {
-    align-items: flex-start;
+    align-items: center;
     margin-bottom: 20px;
   }
 
   .section-heading .icon-button {
     width: 30px;
     min-height: 30px;
-    margin-top: 15px;
     border: 0;
     background: transparent;
   }
