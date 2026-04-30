@@ -6,11 +6,13 @@ import {
   Circle,
   Edit3,
   LayoutList,
+  Moon,
   MoreHorizontal,
   Plus,
   Settings,
   Share2,
   ShoppingBasket,
+  Sun,
   Trash2,
   UserRound,
   Wallet
@@ -18,6 +20,7 @@ import {
 import type { ReactNode } from "react";
 import { useMemo } from "react";
 import { useFairStore } from "./state/useFairStore";
+import { useThemeStore } from "./state/useThemeStore";
 
 const emptyFair = {
   id: "empty",
@@ -34,6 +37,12 @@ function App() {
   const items = useFairStore((state) => state.itemsByFair[selectedFairId] ?? []);
   const togglePurchased = useFairStore((state) => state.togglePurchased);
   const selectedFair = fairs.find((fair) => fair.id === selectedFairId) ?? fairs[0] ?? emptyFair;
+  const theme = useThemeStore((state) => state.theme);
+  const toggleTheme = useThemeStore((state) => state.toggleTheme);
+  const logoSrc =
+    theme === "dark"
+      ? "/assets/logo/balaio-logo-horizontal-dark.svg"
+      : "/assets/logo/balaio-logo-horizontal.svg";
 
   const totals = useMemo(() => {
     const total = items.reduce((sum, item) => sum + item.totalPrice, 0);
@@ -47,7 +56,7 @@ function App() {
     <main className="app-shell">
       <aside className="sidebar">
         <div className="brand">
-          <img src="/assets/logo/balaio-logo-horizontal.svg" alt="Balaio" />
+          <img src={logoSrc} alt="Balaio" />
         </div>
 
         <nav className="nav-list" aria-label="Principal">
@@ -86,6 +95,15 @@ function App() {
             <span className="avatar">JR</span>
             <span className="live-dot" />
           </div>
+          <button
+            className="icon-button theme-toggle"
+            type="button"
+            aria-label={theme === "dark" ? "Ativar tema claro" : "Ativar tema escuro"}
+            onClick={toggleTheme}
+            title={theme === "dark" ? "Tema claro" : "Tema escuro"}
+          >
+            {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
           <button className="primary-button" type="button">
             <Plus size={17} />
             Nova feira
