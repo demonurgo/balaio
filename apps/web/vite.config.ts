@@ -11,7 +11,11 @@ export default defineConfig({
     port: 5173,
     proxy: {
       "/api": "http://localhost:3333",
-      "/health": "http://localhost:3333"
+      "/health": "http://localhost:3333",
+      "/socket.io": {
+        target: "http://localhost:3333",
+        ws: true
+      }
     }
   }
 });
