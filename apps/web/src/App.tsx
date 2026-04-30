@@ -3,6 +3,7 @@ import {
   CalendarDays,
   Check,
   CheckCircle2,
+  ChevronRight,
   Circle,
   Edit3,
   LayoutList,
@@ -103,9 +104,9 @@ function App() {
           >
             {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
           </button>
-          <button className="primary-button" type="button">
+          <button className="primary-button add-fair-button" type="button">
             <Plus size={17} />
-            Nova feira
+            <span>Nova feira</span>
           </button>
         </header>
 
@@ -141,6 +142,7 @@ function App() {
                       <small>Total</small>
                       <strong>{formatCurrency(fair.total)}</strong>
                     </span>
+                    <ChevronRight className="fair-row-arrow" size={24} aria-hidden="true" />
                     <span className="progress-track" aria-hidden="true">
                       <span style={{ width: `${progress}%` }} />
                     </span>
@@ -241,6 +243,25 @@ function App() {
           </section>
         </div>
       </section>
+
+      <nav className="bottom-tabs" aria-label="Navegacao principal">
+        <a className="bottom-tab active" href="#feiras">
+          <ShoppingBasket size={25} />
+          <span>Feiras</span>
+        </a>
+        <a className="bottom-tab" href="#calendario">
+          <CalendarDays size={25} />
+          <span>Calendario</span>
+        </a>
+        <a className="bottom-tab" href="#orcamento">
+          <Wallet size={25} />
+          <span>Orcamento</span>
+        </a>
+        <a className="bottom-tab" href="#perfil">
+          <UserRound size={25} />
+          <span>Perfil</span>
+        </a>
+      </nav>
     </main>
   );
 }
