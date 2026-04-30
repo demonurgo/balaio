@@ -15,6 +15,9 @@ export type FairItem = {
   unitPrice: number;
   totalPrice: number;
   purchased: boolean;
+  category?: string;
+  notes?: string;
+  imageUrl?: string;
 };
 
 type FairState = {
@@ -23,6 +26,7 @@ type FairState = {
   itemsByFair: Record<string, FairItem[]>;
   selectFair: (fairId: string) => void;
   togglePurchased: (itemId: string) => void;
+  updateItem: (itemId: string, input: Partial<Omit<FairItem, "id" | "totalPrice">>) => void;
 };
 
 const fairs: Fair[] = [
@@ -33,14 +37,26 @@ const fairs: Fair[] = [
 ];
 
 const maioItems: FairItem[] = [
-  { id: "arroz", name: "Arroz agulhinha 5kg", quantity: 2, unitPrice: 24.9, totalPrice: 49.8, purchased: true },
-  { id: "feijao", name: "Feijao carioca 1kg", quantity: 2, unitPrice: 7.9, totalPrice: 15.8, purchased: true },
-  { id: "acucar", name: "Acucar cristal 1kg", quantity: 2, unitPrice: 4.59, totalPrice: 9.18, purchased: true },
-  { id: "cafe", name: "Cafe torrado 500g", quantity: 2, unitPrice: 18.9, totalPrice: 37.8, purchased: false },
-  { id: "oleo", name: "Oleo de soja 900ml", quantity: 2, unitPrice: 7.49, totalPrice: 14.98, purchased: false },
-  { id: "leite", name: "Leite integral 1L", quantity: 4, unitPrice: 4.49, totalPrice: 17.96, purchased: false },
-  { id: "pao", name: "Pao de forma", quantity: 2, unitPrice: 6.9, totalPrice: 13.8, purchased: false }
+  { id: "arroz", name: "Arroz agulhinha 5kg", quantity: 2, unitPrice: 24.9, totalPrice: 49.8, purchased: true, category: "Mercearia" },
+  { id: "feijao", name: "Feijao carioca 1kg", quantity: 2, unitPrice: 7.9, totalPrice: 15.8, purchased: true, category: "Mercearia" },
+  { id: "acucar", name: "Acucar cristal 1kg", quantity: 2, unitPrice: 4.59, totalPrice: 9.18, purchased: true, category: "Mercearia" },
+  { id: "cafe", name: "Cafe torrado 500g", quantity: 2, unitPrice: 18.9, totalPrice: 37.8, purchased: false, category: "Cafe" },
+  { id: "oleo", name: "Oleo de soja 900ml", quantity: 2, unitPrice: 7.49, totalPrice: 14.98, purchased: false, category: "Cozinha" },
+  { id: "leite", name: "Leite integral 1L", quantity: 4, unitPrice: 4.49, totalPrice: 17.96, purchased: false, category: "Laticinios" },
+  { id: "pao", name: "Pao de forma", quantity: 2, unitPrice: 6.9, totalPrice: 13.8, purchased: false, category: "Padaria" }
 ];
+
+function recalculateItem(item: FairItem): FairItem {
+  const quantity = Math.max(1, Math.round(Number(item.quantity) || 1));
+  const unitPrice = Math.max(0, Number(item.unitPrice) || 0);
+
+  return {
+    ...item,
+    quantity,
+    unitPrice,
+    totalPrice: Number((quantity * unitPrice).toFixed(2))
+  };
+}
 
 export const useFairStore = create<FairState>((set) => ({
   selectedFairId: "maio-2026",
@@ -62,6 +78,32 @@ export const useFairStore = create<FairState>((set) => ({
           [state.selectedFairId]: currentItems.map((item) =>
             item.id === itemId ? { ...item, purchased: !item.purchased } : item
           )
+        }
+      };
+    }),
+  updateItem: (itemId, input) =>
+    set((state) => {
+      const currentItems = state.itemsByFair[state.selectedFairId] ?? [];
+      let totalDelta = 0;
+      const nextItems = currentItems.map((item) => {
+        if (item.id !== itemId) {
+          return item;
+        }
+
+        const nextItem = recalculateItem({ ...item, ...input });
+        totalDelta = nextItem.totalPrice - item.totalPrice;
+        return nextItem;
+      });
+
+      return {
+        fairs: state.fairs.map((fair) =>
+          fair.id === state.selectedFairId
+            ? { ...fair, total: Number((fair.total + totalDelta).toFixed(2)) }
+            : fair
+        ),
+        itemsByFair: {
+          ...state.itemsByFair,
+          [state.selectedFairId]: nextItems
         }
       };
     })
