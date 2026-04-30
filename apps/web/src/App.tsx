@@ -110,7 +110,7 @@ function App() {
           >
             {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
           </button>
-          <button className="primary-button add-fair-button" type="button" onClick={() => triggerHaptic("light")}>
+          <button className="primary-button add-fair-button" type="button" onClick={() => triggerHaptic("medium")}>
             <Plus size={17} />
             <span>Nova feira</span>
           </button>
