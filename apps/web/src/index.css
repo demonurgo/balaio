@@ -844,6 +844,10 @@ h2 {
     background: transparent;
   }
 
+  .fair-row:last-child {
+    border-bottom: 0;
+  }
+
   .fair-row > span:first-child {
     display: grid;
     gap: 5px;
