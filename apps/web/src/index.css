@@ -70,19 +70,6 @@ body {
   -ms-overflow-style: none;
 }
 
-body::after {
-  content: "";
-  display: none;
-  position: fixed;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  z-index: 18;
-  height: max(72px, calc(env(safe-area-inset-bottom) + 36px));
-  background: var(--color-bg);
-  pointer-events: none;
-}
-
 html::-webkit-scrollbar,
 body::-webkit-scrollbar,
 *::-webkit-scrollbar {
@@ -749,10 +736,6 @@ h2 {
 }
 
 @media (max-width: 720px) {
-  body::after {
-    display: block;
-  }
-
   .app-shell {
     display: block;
     padding-inline: 0;
@@ -1003,14 +986,15 @@ h2 {
     position: fixed;
     left: 20px;
     right: 20px;
-    bottom: max(-18px, calc(env(safe-area-inset-bottom) - 54px));
+    bottom: 0;
     z-index: 20;
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    min-height: 66px;
-    padding: 8px 10px;
+    min-height: calc(66px + env(safe-area-inset-bottom));
+    padding: 8px 10px max(8px, env(safe-area-inset-bottom));
     border: 1px solid color-mix(in srgb, var(--color-border) 76%, transparent);
-    border-radius: 999px;
+    border-bottom: 0;
+    border-radius: 34px 34px 0 0;
     background: color-mix(in srgb, var(--color-bg) 92%, white);
     box-shadow:
       0 20px 44px rgba(20, 38, 31, 0.18),
