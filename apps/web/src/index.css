@@ -860,7 +860,7 @@ h2 {
 .profile-hero {
   display: grid;
   grid-template-columns: 144px minmax(0, 1fr);
-  gap: 24px;
+  gap: 34px;
   align-items: center;
 }
 
@@ -934,11 +934,11 @@ h2 {
 .profile-pass {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: clamp(44px, 18vw, 120px);
+  justify-content: space-between;
+  gap: 18px;
   width: 100%;
   min-height: 44px;
-  padding: 0 24px;
+  padding: 0 28px;
   border: 0;
   border-radius: 999px;
   color: var(--color-logo-white);
@@ -1522,7 +1522,7 @@ h2 {
 
   .profile-hero {
     grid-template-columns: 118px minmax(0, 1fr);
-    gap: 18px;
+    gap: 24px;
   }
 
   .profile-avatar {
@@ -1557,8 +1557,8 @@ h2 {
 
   .profile-pass {
     min-height: 40px;
-    padding: 0 20px;
-    gap: clamp(34px, 18vw, 78px);
+    padding: 0 24px;
+    gap: 16px;
   }
 
   .profile-section h2 {
