@@ -891,8 +891,9 @@ h2 {
   width: 42px;
   height: 42px;
   border-radius: 12px;
-  color: var(--color-primary-hover);
-  background: var(--color-warning);
+  color: var(--color-logo-white);
+  background: var(--color-primary);
+  box-shadow: 0 8px 22px rgba(20, 38, 31, 0.14);
   transform: rotate(12deg);
 }
 
