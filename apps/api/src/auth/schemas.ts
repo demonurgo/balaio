@@ -56,8 +56,16 @@ export const loginSchema = z.object({
   password: z.string().min(1, "Senha obrigatoria.")
 });
 
+export const profileUpdateSchema = z.object({
+  firstName: nameSchema,
+  lastName: nameSchema,
+  birthDate: birthDateSchema,
+  email: emailSchema
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+export type ProfileUpdateInput = z.infer<typeof profileUpdateSchema>;
 
 export function toFieldErrors(error: z.ZodError) {
   return error.issues.reduce<Record<string, string>>((errors, issue) => {

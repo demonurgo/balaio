@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { FastifyInstance } from "fastify";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { hashPassword } from "../auth/password.js";
-import type { AuthRepository, AuthUserRecord, CreateUserInput } from "../auth/repository.js";
+import type { AuthRepository, AuthUserRecord, CreateUserInput, UpdateUserInput } from "../auth/repository.js";
 import { createApp } from "../app.js";
 
 class MemoryAuthRepository implements AuthRepository {
@@ -27,6 +27,26 @@ class MemoryAuthRepository implements AuthRepository {
       passwordHash: input.passwordHash
     };
     this.users.set(user.id, user);
+    return user;
+  }
+
+  async updateUser(id: string, input: UpdateUserInput) {
+    const current = this.users.get(id);
+
+    if (!current) {
+      return null;
+    }
+
+    const user: AuthUserRecord = {
+      ...current,
+      name: `${input.firstName} ${input.lastName}`.trim(),
+      firstName: input.firstName,
+      lastName: input.lastName,
+      birthDate: input.birthDate,
+      email: input.email
+    };
+
+    this.users.set(id, user);
     return user;
   }
 }
@@ -149,5 +169,41 @@ describe("auth routes", () => {
     }
 
     expect(response.statusCode).toBe(429);
+  });
+
+  it("updates authenticated profile fields", async () => {
+    const registerResponse = await app.inject({
+      method: "POST",
+      url: "/api/auth/register",
+      payload: {
+        firstName: "Maria",
+        lastName: "Alves",
+        birthDate: "1990-05-10",
+        email: "maria@example.com",
+        password: "senha-segura",
+        confirmPassword: "senha-segura"
+      }
+    });
+    const cookie = registerResponse.headers["set-cookie"];
+
+    const updateResponse = await app.inject({
+      method: "PATCH",
+      url: "/api/auth/me",
+      headers: {
+        cookie: String(cookie)
+      },
+      payload: {
+        firstName: "Ana",
+        lastName: "Lima",
+        birthDate: "1991-06-11",
+        email: "ANA@example.com"
+      }
+    });
+    const body = updateResponse.json();
+
+    expect(updateResponse.statusCode).toBe(200);
+    expect(body.user.name).toBe("Ana Lima");
+    expect(body.user.email).toBe("ana@example.com");
+    expect(body.user.birthDate).toBe("1991-06-11");
   });
 });

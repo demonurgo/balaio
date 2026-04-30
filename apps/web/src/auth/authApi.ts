@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from "../lib/api";
+import { apiGet, apiPatch, apiPost } from "../lib/api";
 import type { LoginValues, RegisterValues } from "./validation";
 
 export type AuthUser = {
@@ -12,6 +12,13 @@ export type AuthUser = {
 
 type AuthResponse = {
   user: AuthUser;
+};
+
+export type ProfileUpdateValues = {
+  firstName: string;
+  lastName: string;
+  birthDate: string;
+  email: string;
 };
 
 export function registerAccount(values: RegisterValues) {
@@ -28,4 +35,8 @@ export function logout() {
 
 export function getMe() {
   return apiGet<AuthResponse>("/api/auth/me");
+}
+
+export function updateProfile(values: ProfileUpdateValues) {
+  return apiPatch<AuthResponse>("/api/auth/me", values);
 }

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import * as authApi from "../auth/authApi";
-import type { AuthUser } from "../auth/authApi";
+import type { AuthUser, ProfileUpdateValues } from "../auth/authApi";
 import type { LoginValues, RegisterValues } from "../auth/validation";
 
 type AuthStatus = "loading" | "anonymous" | "authenticated";
@@ -11,6 +11,7 @@ type AuthState = {
   loadMe: () => Promise<void>;
   login: (values: LoginValues) => Promise<void>;
   register: (values: RegisterValues) => Promise<void>;
+  updateProfile: (values: ProfileUpdateValues) => Promise<void>;
   logout: () => Promise<void>;
 };
 
@@ -31,6 +32,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
   async register(values) {
     const response = await authApi.registerAccount(values);
+    set({ user: response.user, status: "authenticated" });
+  },
+  async updateProfile(values) {
+    const response = await authApi.updateProfile(values);
     set({ user: response.user, status: "authenticated" });
   },
   async logout() {

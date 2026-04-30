@@ -45,3 +45,10 @@ export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
     body: body === undefined ? undefined : JSON.stringify(body)
   });
 }
+
+export async function apiPatch<T>(path: string, body?: unknown): Promise<T> {
+  return apiRequest<T>(path, {
+    method: "PATCH",
+    body: body === undefined ? undefined : JSON.stringify(body)
+  });
+}

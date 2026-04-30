@@ -20,10 +20,18 @@ export type CreateUserInput = {
   passwordHash: string;
 };
 
+export type UpdateUserInput = {
+  firstName: string;
+  lastName: string;
+  birthDate: string;
+  email: string;
+};
+
 export type AuthRepository = {
   findUserByEmail: (email: string) => Promise<AuthUserRecord | null>;
   findUserById: (id: string) => Promise<AuthUserRecord | null>;
   createUser: (input: CreateUserInput) => Promise<AuthUserRecord>;
+  updateUser: (id: string, input: UpdateUserInput) => Promise<AuthUserRecord | null>;
 };
 
 const userColumns = {
@@ -65,6 +73,23 @@ export function createDbAuthRepository(): AuthRepository {
       }
 
       return rows[0];
+    },
+    async updateUser(id, input) {
+      const name = `${input.firstName} ${input.lastName}`.trim();
+      const rows = await db
+        .update(users)
+        .set({
+          name,
+          firstName: input.firstName,
+          lastName: input.lastName,
+          birthDate: input.birthDate,
+          email: input.email,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, id))
+        .returning(userColumns);
+
+      return rows[0] ?? null;
     }
   };
 }

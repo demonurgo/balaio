@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { hashPassword, verifyPassword } from "../auth/password.js";
 import type { AuthRepository, AuthUserRecord } from "../auth/repository.js";
-import { loginSchema, registerSchema, toFieldErrors } from "../auth/schemas.js";
+import { loginSchema, profileUpdateSchema, registerSchema, toFieldErrors } from "../auth/schemas.js";
 import { clearSessionCookie, getSessionUserId, setSessionCookie } from "../auth/session.js";
 
 function toPublicUser(user: AuthUserRecord) {
@@ -156,5 +156,59 @@ export async function registerAuthRoutes(app: FastifyInstance, repository: AuthR
     return {
       user: toPublicUser(user)
     };
+  });
+
+  app.patch("/api/auth/me", async (request, reply) => {
+    const userId = await getSessionUserId(app, request);
+
+    if (!userId) {
+      return reply.code(401).send({
+        error: "Unauthenticated",
+        message: "Sessao expirada."
+      });
+    }
+
+    const parsed = profileUpdateSchema.safeParse(request.body);
+
+    if (!parsed.success) {
+      return reply.code(400).send(validationError(toFieldErrors(parsed.error)));
+    }
+
+    const existing = await repository.findUserByEmail(parsed.data.email);
+
+    if (existing && existing.id !== userId) {
+      return reply.code(409).send(
+        validationError({
+          email: "Este email ja esta em uso."
+        })
+      );
+    }
+
+    try {
+      const user = await repository.updateUser(userId, parsed.data);
+
+      if (!user) {
+        clearSessionCookie(reply);
+
+        return reply.code(401).send({
+          error: "Unauthenticated",
+          message: "Sessao expirada."
+        });
+      }
+
+      return {
+        user: toPublicUser(user)
+      };
+    } catch (error) {
+      if (isUniqueViolation(error)) {
+        return reply.code(409).send(
+          validationError({
+            email: "Este email ja esta em uso."
+          })
+        );
+      }
+
+      throw error;
+    }
   });
 }

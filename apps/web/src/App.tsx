@@ -17,7 +17,8 @@ import {
   Sun,
   Trash2,
   UserRound,
-  Wallet
+  Wallet,
+  X
 } from "lucide-react";
 import type { KeyboardEvent, ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -53,6 +54,7 @@ function App() {
   const user = useAuthStore((state) => state.user);
   const loadMe = useAuthStore((state) => state.loadMe);
   const logout = useAuthStore((state) => state.logout);
+  const updateProfile = useAuthStore((state) => state.updateProfile);
   const [view, setView] = useState<View>(getViewFromHash);
   const fairs = useFairStore((state) => state.fairs);
   const selectedFairId = useFairStore((state) => state.selectedFairId);
@@ -194,6 +196,7 @@ function App() {
             logout={logout}
             theme={theme}
             toggleTheme={toggleTheme}
+            updateProfile={updateProfile}
           />
         ) : (
         <div className="workspace">
@@ -440,9 +443,12 @@ type ProfilePageProps = {
   logout: () => Promise<void>;
   theme: "light" | "dark";
   toggleTheme: () => void;
+  updateProfile: (values: { firstName: string; lastName: string; birthDate: string; email: string }) => Promise<void>;
 };
 
-function ProfilePage({ user, fairsCount, itemsCount, logout, theme, toggleTheme }: ProfilePageProps) {
+type ProfileField = "name" | "email" | "birthDate";
+
+function ProfilePage({ user, fairsCount, itemsCount, logout, theme, toggleTheme, updateProfile }: ProfilePageProps) {
   const [copied, setCopied] = useState(false);
   const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(" ") || user?.name || "Perfil Balaio";
   const firstName = user?.firstName || fullName.split(" ")[0] || "Perfil";
@@ -451,6 +457,93 @@ function ProfilePage({ user, fairsCount, itemsCount, logout, theme, toggleTheme 
   const birthday = formatDate(birthDate);
   const initials = getInitials(firstName, lastName);
   const profileCode = getProfileCode(user?.id ?? "");
+  const [editingField, setEditingField] = useState<ProfileField | null>(null);
+  const [draft, setDraft] = useState({
+    name: fullName,
+    email: user?.email ?? "",
+    birthDate
+  });
+  const [editError, setEditError] = useState("");
+  const [savingField, setSavingField] = useState<ProfileField | null>(null);
+
+  useEffect(() => {
+    if (!editingField) {
+      setDraft({
+        name: fullName,
+        email: user?.email ?? "",
+        birthDate
+      });
+    }
+  }, [birthDate, editingField, fullName, user?.email]);
+
+  const startEdit = (field: ProfileField) => {
+    triggerHaptic("selection");
+    setEditError("");
+    setEditingField(field);
+  };
+
+  const cancelEdit = () => {
+    triggerHaptic("light");
+    setEditError("");
+    setEditingField(null);
+    setDraft({
+      name: fullName,
+      email: user?.email ?? "",
+      birthDate
+    });
+  };
+
+  const saveEdit = async (field: ProfileField) => {
+    const next = {
+      firstName: user?.firstName ?? "",
+      lastName: user?.lastName ?? "",
+      birthDate: user?.birthDate ?? "",
+      email: user?.email ?? ""
+    };
+
+    if (field === "name") {
+      const parts = draft.name.trim().split(/\s+/).filter(Boolean);
+
+      if (parts.length < 2) {
+        setEditError("Informe nome e sobrenome.");
+        return;
+      }
+
+      next.firstName = parts[0];
+      next.lastName = parts.slice(1).join(" ");
+    }
+
+    if (field === "email") {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.email.trim())) {
+        setEditError("Email invalido.");
+        return;
+      }
+
+      next.email = draft.email.trim();
+    }
+
+    if (field === "birthDate") {
+      if (!parseDate(draft.birthDate)) {
+        setEditError("Data invalida.");
+        return;
+      }
+
+      next.birthDate = draft.birthDate;
+    }
+
+    try {
+      setSavingField(field);
+      await updateProfile(next);
+      triggerHaptic("success");
+      setEditError("");
+      setEditingField(null);
+    } catch (error) {
+      const fields = typeof error === "object" && error !== null && "fields" in error ? (error as { fields?: Record<string, string> }).fields : undefined;
+      setEditError(fields?.firstName ?? fields?.lastName ?? fields?.email ?? fields?.birthDate ?? "Nao foi possivel salvar.");
+    } finally {
+      setSavingField(null);
+    }
+  };
 
   return (
     <section className="profile-page" id="perfil" aria-label="Perfil">
@@ -514,9 +607,48 @@ function ProfilePage({ user, fairsCount, itemsCount, logout, theme, toggleTheme 
       <section className="profile-section" aria-label="Dados da conta">
         <h2>Conta</h2>
         <div className="profile-list">
-          <ProfileRow label="Nome" value={fullName} icon={<UserRound size={18} />} />
-          <ProfileRow label="Email" value={user?.email ?? "-"} icon={<ShieldCheck size={18} />} />
-          <ProfileRow label="Nascimento" value={birthday} icon={<CalendarDays size={18} />} />
+          <ProfileEditableRow
+            draftValue={draft.name}
+            editing={editingField === "name"}
+            error={editingField === "name" ? editError : ""}
+            icon={<UserRound size={18} />}
+            inputMode="text"
+            label="Nome"
+            onCancel={cancelEdit}
+            onChange={(value) => setDraft((current) => ({ ...current, name: value }))}
+            onEdit={() => startEdit("name")}
+            onSave={() => void saveEdit("name")}
+            saving={savingField === "name"}
+            value={fullName}
+          />
+          <ProfileEditableRow
+            draftValue={draft.email}
+            editing={editingField === "email"}
+            error={editingField === "email" ? editError : ""}
+            icon={<ShieldCheck size={18} />}
+            inputMode="email"
+            label="Email"
+            onCancel={cancelEdit}
+            onChange={(value) => setDraft((current) => ({ ...current, email: value }))}
+            onEdit={() => startEdit("email")}
+            onSave={() => void saveEdit("email")}
+            saving={savingField === "email"}
+            value={user?.email ?? "-"}
+          />
+          <ProfileEditableRow
+            draftValue={draft.birthDate}
+            editing={editingField === "birthDate"}
+            error={editingField === "birthDate" ? editError : ""}
+            icon={<CalendarDays size={18} />}
+            inputMode="date"
+            label="Nascimento"
+            onCancel={cancelEdit}
+            onChange={(value) => setDraft((current) => ({ ...current, birthDate: value }))}
+            onEdit={() => startEdit("birthDate")}
+            onSave={() => void saveEdit("birthDate")}
+            saving={savingField === "birthDate"}
+            value={birthday}
+          />
         </div>
       </section>
 
@@ -562,6 +694,83 @@ type ProfileRowProps = {
   value: string;
   icon: ReactNode;
 };
+
+type ProfileEditableRowProps = ProfileRowProps & {
+  draftValue: string;
+  editing: boolean;
+  error: string;
+  inputMode: "text" | "email" | "date";
+  onCancel: () => void;
+  onChange: (value: string) => void;
+  onEdit: () => void;
+  onSave: () => void;
+  saving: boolean;
+};
+
+function ProfileEditableRow({
+  draftValue,
+  editing,
+  error,
+  icon,
+  inputMode,
+  label,
+  onCancel,
+  onChange,
+  onEdit,
+  onSave,
+  saving,
+  value
+}: ProfileEditableRowProps) {
+  if (!editing) {
+    return (
+      <button className="profile-row profile-row-button" type="button" onClick={onEdit}>
+        <span className="profile-row-icon">{icon}</span>
+        <span>
+          <small>{label}</small>
+          <strong>{value}</strong>
+        </span>
+        <Edit3 size={16} />
+      </button>
+    );
+  }
+
+  return (
+    <div className="profile-row profile-row-editing">
+      <span className="profile-row-icon">{icon}</span>
+      <label className="profile-edit-field">
+        <small>{label}</small>
+        <input
+          autoFocus
+          className="profile-edit-input"
+          disabled={saving}
+          onChange={(event) => onChange(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              onSave();
+            }
+
+            if (event.key === "Escape") {
+              event.preventDefault();
+              onCancel();
+            }
+          }}
+          type={inputMode}
+          value={draftValue}
+        />
+      </label>
+      <span className="profile-edit-actions">
+        <button aria-label={`Salvar ${label}`} className="icon-button compact" disabled={saving} type="button" onClick={onSave}>
+          <Check size={15} />
+        </button>
+        <button aria-label={`Cancelar ${label}`} className="icon-button compact" disabled={saving} type="button" onClick={onCancel}>
+          <X size={15} />
+        </button>
+      </span>
+      {error ? <em className="profile-edit-error">{error}</em> : null}
+    </div>
+  );
+}
 
 function ProfileRow({ label, value, icon }: ProfileRowProps) {
   return (
