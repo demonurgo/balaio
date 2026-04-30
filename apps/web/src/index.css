@@ -860,7 +860,7 @@ h2 {
 .profile-hero {
   display: grid;
   grid-template-columns: 144px minmax(0, 1fr);
-  gap: 34px;
+  gap: 44px;
   align-items: center;
 }
 
@@ -1522,7 +1522,7 @@ h2 {
 
   .profile-hero {
     grid-template-columns: 118px minmax(0, 1fr);
-    gap: 24px;
+    gap: 30px;
   }
 
   .profile-avatar {
