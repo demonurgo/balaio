@@ -387,6 +387,8 @@ Usar pouco:
 - update realtime: highlight 700ms
 - comprado: check + opacidade leve
 - loading: skeleton, sem spinner central
+- toque mobile: sem overlay cinza do navegador
+- feedback de toque: scale pequeno, fundo quase transparente e haptic curto quando suportado
 
 Evitar:
 
@@ -394,6 +396,7 @@ Evitar:
 - bouncing excessivo
 - transicoes longas
 - efeitos decorativos
+- overlay grande cobrindo linhas ou botoes
 
 ## Assets Necessarios
 

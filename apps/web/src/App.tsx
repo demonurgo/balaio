@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import type { KeyboardEvent, ReactNode } from "react";
 import { useMemo, useState } from "react";
+import { triggerHaptic } from "./lib/haptics";
 import { useFairStore } from "./state/useFairStore";
 import type { Fair, FairItem } from "./state/useFairStore";
 import { useThemeStore } from "./state/useThemeStore";
@@ -63,25 +64,25 @@ function App() {
         </div>
 
         <nav className="nav-list" aria-label="Principal">
-          <a className="nav-item active" href="#feiras">
+          <a className="nav-item active" href="#feiras" onClick={() => triggerHaptic("selection")}>
             <ShoppingBasket size={19} />
             Feiras
           </a>
-          <a className="nav-item" href="#calendario">
+          <a className="nav-item" href="#calendario" onClick={() => triggerHaptic("selection")}>
             <CalendarDays size={19} />
             Calendario
           </a>
-          <a className="nav-item" href="#orcamento">
+          <a className="nav-item" href="#orcamento" onClick={() => triggerHaptic("selection")}>
             <Wallet size={19} />
             Orcamento
           </a>
-          <a className="nav-item" href="#perfil">
+          <a className="nav-item" href="#perfil" onClick={() => triggerHaptic("selection")}>
             <UserRound size={19} />
             Perfil
           </a>
         </nav>
 
-        <button className="nav-item settings" type="button">
+        <button className="nav-item settings" type="button" onClick={() => triggerHaptic("light")}>
           <Settings size={19} />
           Configuracoes
         </button>
@@ -101,12 +102,15 @@ function App() {
             className="icon-button theme-toggle"
             type="button"
             aria-label={theme === "dark" ? "Ativar tema claro" : "Ativar tema escuro"}
-            onClick={toggleTheme}
+            onClick={() => {
+              triggerHaptic("selection");
+              toggleTheme();
+            }}
             title={theme === "dark" ? "Tema claro" : "Tema escuro"}
           >
             {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
           </button>
-          <button className="primary-button add-fair-button" type="button">
+          <button className="primary-button add-fair-button" type="button" onClick={() => triggerHaptic("light")}>
             <Plus size={17} />
             <span>Nova feira</span>
           </button>
@@ -118,7 +122,7 @@ function App() {
               <div>
                 <h1>Minhas feiras</h1>
               </div>
-              <button className="icon-button" type="button" aria-label="Mais opcoes">
+              <button className="icon-button" type="button" aria-label="Mais opcoes" onClick={() => triggerHaptic("light")}>
                 <MoreHorizontal size={20} />
               </button>
             </div>
@@ -133,7 +137,10 @@ function App() {
                     className={isActive ? "fair-row active" : "fair-row"}
                     key={fair.id}
                     type="button"
-                    onClick={() => selectFair(fair.id)}
+                    onClick={() => {
+                      triggerHaptic("selection");
+                      selectFair(fair.id);
+                    }}
                   >
                     <span>
                       <strong>{fair.label}</strong>
@@ -157,7 +164,7 @@ function App() {
 
           <section className="fair-panel">
             <div className="fair-header">
-              <button className="icon-button" type="button" aria-label="Voltar">
+              <button className="icon-button" type="button" aria-label="Voltar" onClick={() => triggerHaptic("light")}>
                 <ArrowLeft size={20} />
               </button>
               <div>
@@ -165,14 +172,14 @@ function App() {
                 <p>{selectedFair.memberCount} pessoas</p>
               </div>
               <div className="header-actions">
-                <button className="ghost-button" type="button">
+                <button className="ghost-button" type="button" onClick={() => triggerHaptic("light")}>
                   <Share2 size={17} />
                   Compartilhar
                 </button>
-                <button className="icon-button" type="button" aria-label="Editar">
+                <button className="icon-button" type="button" aria-label="Editar" onClick={() => triggerHaptic("light")}>
                   <Edit3 size={18} />
                 </button>
-                <button className="primary-button" type="button">
+                <button className="primary-button" type="button" onClick={() => triggerHaptic("light")}>
                   <Plus size={17} />
                   Adicionar item
                 </button>
@@ -198,17 +205,30 @@ function App() {
                   <span>{formatCurrency(item.unitPrice)}</span>
                   <span>{formatCurrency(item.totalPrice)}</span>
                   <span className="row-actions">
-                    <button className="icon-button compact" type="button" aria-label={`Editar ${item.name}`}>
+                    <button
+                      className="icon-button compact"
+                      type="button"
+                      aria-label={`Editar ${item.name}`}
+                      onClick={() => triggerHaptic("light")}
+                    >
                       <Edit3 size={16} />
                     </button>
-                    <button className="icon-button compact" type="button" aria-label={`Excluir ${item.name}`}>
+                    <button
+                      className="icon-button compact"
+                      type="button"
+                      aria-label={`Excluir ${item.name}`}
+                      onClick={() => triggerHaptic("light")}
+                    >
                       <Trash2 size={16} />
                     </button>
                     <button
                       className={item.purchased ? "status-button done" : "status-button"}
                       type="button"
                       aria-label={item.purchased ? `${item.name} comprado` : `Marcar ${item.name} como comprado`}
-                      onClick={() => togglePurchased(item.id)}
+                      onClick={() => {
+                        triggerHaptic("success");
+                        togglePurchased(item.id);
+                      }}
                     >
                       {item.purchased ? <CheckCircle2 size={18} /> : <Circle size={18} />}
                     </button>
@@ -248,19 +268,19 @@ function App() {
       </section>
 
       <nav className="bottom-tabs" aria-label="Navegacao principal">
-        <a className="bottom-tab active" href="#feiras">
+        <a className="bottom-tab active" href="#feiras" onClick={() => triggerHaptic("selection")}>
           <ShoppingBasket size={22} />
           <span>Feiras</span>
         </a>
-        <a className="bottom-tab" href="#calendario">
+        <a className="bottom-tab" href="#calendario" onClick={() => triggerHaptic("selection")}>
           <CalendarDays size={22} />
           <span>Calendario</span>
         </a>
-        <a className="bottom-tab" href="#orcamento">
+        <a className="bottom-tab" href="#orcamento" onClick={() => triggerHaptic("selection")}>
           <Wallet size={22} />
           <span>Orcamento</span>
         </a>
-        <a className="bottom-tab" href="#perfil">
+        <a className="bottom-tab" href="#perfil" onClick={() => triggerHaptic("selection")}>
           <UserRound size={22} />
           <span>Perfil</span>
         </a>
@@ -353,10 +373,14 @@ function MiniTrendChart({ fairs, selectedIndex, onSelect }: MiniTrendChartProps)
     y: 46 - ((value - min) / range) * 34
   }));
   const polyline = points.map((point) => `${point.x},${point.y}`).join(" ");
+  const selectPoint = (index: number) => {
+    triggerHaptic("selection");
+    onSelect(index);
+  };
   const handleKeyDown = (event: KeyboardEvent<SVGGElement>, index: number) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
-      onSelect(index);
+      selectPoint(index);
     }
   };
 
@@ -368,7 +392,7 @@ function MiniTrendChart({ fairs, selectedIndex, onSelect }: MiniTrendChartProps)
           aria-label={`${fairs[index].label}: ${formatCurrency(fairs[index].total)}`}
           className={index === selectedIndex ? "trend-point active" : "trend-point"}
           key={fairs[index].id}
-          onClick={() => onSelect(index)}
+          onClick={() => selectPoint(index)}
           onKeyDown={(event) => handleKeyDown(event, index)}
           role="button"
           tabIndex={0}

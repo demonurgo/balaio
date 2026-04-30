@@ -47,6 +47,7 @@
 
 * {
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
 html {
@@ -84,8 +85,12 @@ textarea {
   font: inherit;
 }
 
-button {
+button,
+a,
+[role="button"] {
   cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
 }
 
 #root {
@@ -276,7 +281,7 @@ h2 {
   color: var(--color-text);
   background: transparent;
   text-align: left;
-  transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
+  transition: transform 140ms ease, background 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
 }
 
 .fair-row:hover,
@@ -289,8 +294,16 @@ h2 {
 .primary-button:active,
 .ghost-button:active,
 .icon-button:active,
-.status-button:active {
-  transform: translateY(1px);
+.status-button:active,
+.bottom-tab:active,
+.nav-item:active,
+.trend-point:active .trend-dot {
+  transform: scale(0.97);
+}
+
+.fair-row:active {
+  background: color-mix(in srgb, var(--color-primary) 7%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 18%, transparent);
 }
 
 .fair-row strong,
@@ -449,6 +462,8 @@ h2 {
   fill: var(--color-bg);
   stroke: var(--color-primary);
   stroke-width: 2;
+  transform-origin: center;
+  transition: transform 140ms ease, fill 140ms ease, stroke-width 140ms ease;
   vector-effect: non-scaling-stroke;
 }
 
@@ -514,7 +529,7 @@ h2 {
   gap: 8px;
   min-height: 36px;
   border-radius: 8px;
-  transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
+  transition: transform 140ms ease, background 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
 }
 
 .primary-button {
