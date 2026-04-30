@@ -32,5 +32,5 @@ process.once("SIGTERM", shutdown);
 
 await app.listen({
   port: env.API_PORT,
-  host: "0.0.0.0"
+  host: env.API_HOST
 });
