@@ -48,9 +48,16 @@
   box-sizing: border-box;
 }
 
+html {
+  min-height: 100%;
+  background: var(--color-bg);
+}
+
 body {
   margin: 0;
   min-width: 320px;
+  min-height: 100dvh;
+  background: var(--color-bg);
 }
 
 button,
@@ -73,13 +80,15 @@ button {
   grid-template-columns: 224px minmax(0, 1fr);
   min-height: 100dvh;
   background: var(--color-bg);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
 .sidebar {
   display: flex;
   flex-direction: column;
   gap: 24px;
-  padding: 22px 18px;
+  padding: max(22px, env(safe-area-inset-top)) 18px max(22px, env(safe-area-inset-bottom));
   border-right: 1px solid var(--color-border);
 }
 
@@ -120,7 +129,7 @@ button {
 
 .content {
   min-width: 0;
-  padding: 18px;
+  padding: max(18px, env(safe-area-inset-top)) 18px max(18px, env(safe-area-inset-bottom));
 }
 
 .topbar {
@@ -522,7 +531,7 @@ h2 {
 
 @media (max-width: 720px) {
   .content {
-    padding: 12px;
+    padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
   }
 
   .topbar {
