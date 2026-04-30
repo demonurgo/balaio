@@ -70,6 +70,19 @@ body {
   -ms-overflow-style: none;
 }
 
+body::after {
+  content: "";
+  display: none;
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 18;
+  height: max(72px, calc(env(safe-area-inset-bottom) + 36px));
+  background: var(--color-bg);
+  pointer-events: none;
+}
+
 html::-webkit-scrollbar,
 body::-webkit-scrollbar,
 *::-webkit-scrollbar {
@@ -736,6 +749,10 @@ h2 {
 }
 
 @media (max-width: 720px) {
+  body::after {
+    display: block;
+  }
+
   .app-shell {
     display: block;
     padding-inline: 0;
@@ -745,7 +762,7 @@ h2 {
     padding:
       0
       14px
-      calc(88px + env(safe-area-inset-bottom));
+      calc(76px + env(safe-area-inset-bottom));
   }
 
   .topbar {
@@ -986,7 +1003,7 @@ h2 {
     position: fixed;
     left: 20px;
     right: 20px;
-    bottom: max(2px, calc(env(safe-area-inset-bottom) - 28px));
+    bottom: max(-18px, calc(env(safe-area-inset-bottom) - 54px));
     z-index: 20;
     display: grid;
     grid-template-columns: repeat(4, 1fr);
