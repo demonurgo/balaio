@@ -12,7 +12,8 @@ export const fairItemSchema = z.object({
   totalPrice: z.number().nonnegative(),
   purchased: z.boolean(),
   category: z.string().max(80).nullable().optional(),
-  notes: z.string().nullable().optional()
+  notes: z.string().nullable().optional(),
+  imageUrl: z.string().nullable().optional()
 });
 
 export const fairSummarySchema = z.object({

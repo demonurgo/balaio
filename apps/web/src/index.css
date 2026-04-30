@@ -249,8 +249,9 @@ label[for^="web-haptics-"] input[switch] {
 
 .workspace {
   display: grid;
-  grid-template-columns: minmax(280px, 0.82fr) minmax(520px, 1.6fr);
+  grid-template-columns: minmax(280px, 760px);
   gap: 18px;
+  justify-content: start;
   margin-top: 18px;
 }
 
@@ -267,6 +268,7 @@ label[for^="web-haptics-"] input[switch] {
 }
 
 .fair-panel {
+  display: none;
   overflow: hidden;
 }
 
@@ -879,9 +881,32 @@ h2 {
   margin-left: auto;
 }
 
+.fair-title-button {
+  display: block;
+  padding: 0;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  text-align: left;
+}
+
+.fair-title-input {
+  width: min(100%, 320px);
+  min-height: 40px;
+  border: 0;
+  border-bottom: 1px solid var(--color-primary);
+  border-radius: 0;
+  color: var(--color-text);
+  background: transparent;
+  font-family: var(--font-brand);
+  font-size: 34px;
+  line-height: 1;
+  outline: none;
+}
+
 .fair-total-line {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
   padding: 12px 0 4px;
 }
@@ -902,9 +927,52 @@ h2 {
   font-variant-numeric: tabular-nums;
 }
 
+.budget-inline-button {
+  padding: 0;
+  border: 0;
+  color: var(--color-text);
+  background: transparent;
+  font-size: 16px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  text-align: left;
+}
+
+.budget-inline-input {
+  width: 100%;
+  min-width: 0;
+  min-height: 26px;
+  border: 0;
+  border-bottom: 1px solid var(--color-primary);
+  border-radius: 0;
+  color: var(--color-text);
+  background: transparent;
+  font-size: 16px;
+  font-weight: 800;
+  outline: none;
+}
+
+.inline-state {
+  margin: 8px 0 4px;
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.inline-state.error {
+  color: var(--color-danger);
+}
+
 .todo-list {
   display: grid;
   gap: 0;
+}
+
+.empty-list {
+  margin: 18px 0;
+  color: var(--color-muted);
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .todo-item {
@@ -1031,6 +1099,43 @@ h2 {
 
 .todo-inline-input.qty {
   max-width: 40px;
+}
+
+.new-item-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 82px 50px 36px 36px;
+  gap: 8px;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.new-item-form input {
+  min-width: 0;
+  min-height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  color: var(--color-text);
+  background: color-mix(in srgb, var(--color-elevated) 70%, transparent);
+  font-size: 13px;
+  font-weight: 700;
+  outline: none;
+}
+
+.new-item-form button {
+  display: grid;
+  place-items: center;
+  min-height: 38px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  color: var(--color-text);
+  background: transparent;
+}
+
+.new-item-form button[type="submit"] {
+  color: var(--color-logo-white);
+  border-color: var(--color-primary);
+  background: var(--color-primary);
 }
 
 .add-item-strip {
@@ -1208,6 +1313,26 @@ h2 {
   border-radius: 999px;
   color: var(--color-logo-white);
   background: var(--color-primary);
+  font-weight: 800;
+}
+
+.product-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.product-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 16px;
+  border: 1px solid color-mix(in srgb, var(--color-danger) 42%, var(--color-border));
+  border-radius: 999px;
+  color: var(--color-danger);
+  background: transparent;
   font-weight: 800;
 }
 
@@ -1997,12 +2122,18 @@ h2 {
     line-height: 1;
   }
 
+  .fair-title-input {
+    min-height: 36px;
+    font-size: 32px;
+  }
+
   .fair-screen-header p,
   .product-header small {
     font-size: 11px;
   }
 
   .fair-total-line {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
     padding: 8px 0 2px;
   }
@@ -2012,6 +2143,11 @@ h2 {
   }
 
   .fair-total-line strong {
+    font-size: 14px;
+  }
+
+  .budget-inline-button,
+  .budget-inline-input {
     font-size: 14px;
   }
 
@@ -2047,6 +2183,24 @@ h2 {
     font-size: 14px;
   }
 
+  .new-item-form {
+    grid-template-columns: minmax(0, 1fr) 66px 44px;
+    gap: 7px;
+  }
+
+  .new-item-form button {
+    grid-row: 2;
+    min-height: 36px;
+  }
+
+  .new-item-form button[type="submit"] {
+    grid-column: 2;
+  }
+
+  .new-item-form button[type="button"] {
+    grid-column: 3;
+  }
+
   .add-item-strip {
     min-height: 42px;
     border-radius: 999px;
@@ -2080,6 +2234,14 @@ h2 {
 
   .product-save {
     min-height: 44px;
+  }
+
+  .product-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .product-delete {
+    min-height: 42px;
   }
 
   .profile-page {

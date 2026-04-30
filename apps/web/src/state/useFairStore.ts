@@ -1,8 +1,13 @@
 import { create } from "zustand";
+import * as fairApi from "../fair/fairApi";
+import type { FairItemDto, FairPayload, FairPatch, FairSummaryDto, ItemPatch, ItemPayload } from "../fair/fairApi";
 
 export type Fair = {
   id: string;
+  name: string;
   label: string;
+  month: number;
+  year: number;
   budget: number;
   total: number;
   memberCount: number;
@@ -10,101 +15,183 @@ export type Fair = {
 
 export type FairItem = {
   id: string;
+  fairId: string;
   name: string;
   quantity: number;
+  unit: string;
   unitPrice: number;
   totalPrice: number;
   purchased: boolean;
-  category?: string;
-  notes?: string;
-  imageUrl?: string;
+  category?: string | null;
+  notes?: string | null;
+  imageUrl?: string | null;
 };
 
+type FairStatus = "idle" | "loading" | "ready" | "error";
+
 type FairState = {
+  status: FairStatus;
+  error: string;
   selectedFairId: string;
   fairs: Fair[];
   itemsByFair: Record<string, FairItem[]>;
+  loadFairs: () => Promise<void>;
   selectFair: (fairId: string) => void;
-  togglePurchased: (itemId: string) => void;
-  updateItem: (itemId: string, input: Partial<Omit<FairItem, "id" | "totalPrice">>) => void;
+  createFair: (input: FairPayload) => Promise<Fair>;
+  updateFair: (fairId: string, input: FairPatch) => Promise<void>;
+  deleteFair: (fairId: string) => Promise<void>;
+  createItem: (fairId: string, input: ItemPayload) => Promise<void>;
+  updateItem: (itemId: string, input: ItemPatch) => Promise<void>;
+  deleteItem: (itemId: string) => Promise<void>;
+  togglePurchased: (itemId: string) => Promise<void>;
 };
 
-const fairs: Fair[] = [
-  { id: "maio-2026", label: "Maio 2026", budget: 600, total: 432.5, memberCount: 2 },
-  { id: "abril-2026", label: "Abril 2026", budget: 550, total: 548.3, memberCount: 2 },
-  { id: "marco-2026", label: "Marco 2026", budget: 500, total: 362.1, memberCount: 2 },
-  { id: "fevereiro-2026", label: "Fevereiro 2026", budget: 450, total: 298.4, memberCount: 2 }
-];
+export const useFairStore = create<FairState>((set, get) => ({
+  status: "idle",
+  error: "",
+  selectedFairId: "",
+  fairs: [],
+  itemsByFair: {},
 
-const maioItems: FairItem[] = [
-  { id: "arroz", name: "Arroz agulhinha 5kg", quantity: 2, unitPrice: 24.9, totalPrice: 49.8, purchased: true, category: "Mercearia" },
-  { id: "feijao", name: "Feijao carioca 1kg", quantity: 2, unitPrice: 7.9, totalPrice: 15.8, purchased: true, category: "Mercearia" },
-  { id: "acucar", name: "Acucar cristal 1kg", quantity: 2, unitPrice: 4.59, totalPrice: 9.18, purchased: true, category: "Mercearia" },
-  { id: "cafe", name: "Cafe torrado 500g", quantity: 2, unitPrice: 18.9, totalPrice: 37.8, purchased: false, category: "Cafe" },
-  { id: "oleo", name: "Oleo de soja 900ml", quantity: 2, unitPrice: 7.49, totalPrice: 14.98, purchased: false, category: "Cozinha" },
-  { id: "leite", name: "Leite integral 1L", quantity: 4, unitPrice: 4.49, totalPrice: 17.96, purchased: false, category: "Laticinios" },
-  { id: "pao", name: "Pao de forma", quantity: 2, unitPrice: 6.9, totalPrice: 13.8, purchased: false, category: "Padaria" }
-];
+  loadFairs: async () => {
+    set({ status: "loading", error: "" });
 
-function recalculateItem(item: FairItem): FairItem {
-  const quantity = Math.max(1, Math.round(Number(item.quantity) || 1));
-  const unitPrice = Math.max(0, Number(item.unitPrice) || 0);
+    try {
+      const response = await fairApi.getFairs();
+      const fairs = response.data.fairs.map(mapFair);
+      const itemsByFair = mapItemsByFair(response.data.itemsByFair);
+      const currentSelected = get().selectedFairId;
+      const selectedFairId = fairs.some((fair) => fair.id === currentSelected) ? currentSelected : fairs[0]?.id ?? "";
 
+      set({ fairs, itemsByFair, selectedFairId, status: "ready", error: "" });
+    } catch (error) {
+      set({ status: "error", error: getErrorMessage(error) });
+    }
+  },
+
+  selectFair: (fairId) => set({ selectedFairId: fairId }),
+
+  createFair: async (input) => {
+    const response = await fairApi.createFair(input);
+    const fair = mapFair(response.data);
+
+    set((state) => ({
+      fairs: [fair, ...state.fairs].sort(sortFairs),
+      itemsByFair: { ...state.itemsByFair, [fair.id]: [] },
+      selectedFairId: fair.id
+    }));
+
+    return fair;
+  },
+
+  updateFair: async (fairId, input) => {
+    const response = await fairApi.updateFair(fairId, input);
+    const fair = mapFair(response.data);
+
+    set((state) => ({
+      fairs: state.fairs.map((current) => (current.id === fairId ? fair : current)).sort(sortFairs)
+    }));
+  },
+
+  deleteFair: async (fairId) => {
+    await fairApi.deleteFair(fairId);
+    set((state) => {
+      const fairs = state.fairs.filter((fair) => fair.id !== fairId);
+      const itemsByFair = { ...state.itemsByFair };
+      delete itemsByFair[fairId];
+
+      return {
+        fairs,
+        itemsByFair,
+        selectedFairId: state.selectedFairId === fairId ? fairs[0]?.id ?? "" : state.selectedFairId
+      };
+    });
+  },
+
+  createItem: async (fairId, input) => {
+    const response = await fairApi.createItem(fairId, input);
+    const item = mapItem(response.data);
+
+    set((state) => applyItems(state, fairId, [...(state.itemsByFair[fairId] ?? []), item]));
+  },
+
+  updateItem: async (itemId, input) => {
+    const fairId = get().selectedFairId;
+
+    if (!fairId) {
+      return;
+    }
+
+    const response = await fairApi.updateItem(fairId, itemId, input);
+    const item = mapItem(response.data);
+
+    set((state) => applyItems(state, fairId, (state.itemsByFair[fairId] ?? []).map((current) => (current.id === item.id ? item : current))));
+  },
+
+  deleteItem: async (itemId) => {
+    const fairId = get().selectedFairId;
+
+    if (!fairId) {
+      return;
+    }
+
+    await fairApi.deleteItem(fairId, itemId);
+    set((state) => applyItems(state, fairId, (state.itemsByFair[fairId] ?? []).filter((item) => item.id !== itemId)));
+  },
+
+  togglePurchased: async (itemId) => {
+    const state = get();
+    const fairId = state.selectedFairId;
+    const item = (state.itemsByFair[fairId] ?? []).find((current) => current.id === itemId);
+
+    if (!fairId || !item) {
+      return;
+    }
+
+    await state.updateItem(itemId, { purchased: !item.purchased });
+  }
+}));
+
+function mapFair(fair: FairSummaryDto): Fair {
   return {
-    ...item,
-    quantity,
-    unitPrice,
-    totalPrice: Number((quantity * unitPrice).toFixed(2))
+    ...fair,
+    label: fair.name
   };
 }
 
-export const useFairStore = create<FairState>((set) => ({
-  selectedFairId: "maio-2026",
-  fairs,
-  itemsByFair: {
-    "maio-2026": maioItems,
-    "abril-2026": maioItems.map((item) => ({ ...item, id: `abril-${item.id}`, purchased: true })),
-    "marco-2026": maioItems.slice(0, 5).map((item) => ({ ...item, id: `marco-${item.id}` })),
-    "fevereiro-2026": maioItems.slice(0, 4).map((item) => ({ ...item, id: `fevereiro-${item.id}` }))
-  },
-  selectFair: (fairId) => set({ selectedFairId: fairId }),
-  togglePurchased: (itemId) =>
-    set((state) => {
-      const currentItems = state.itemsByFair[state.selectedFairId] ?? [];
+function mapItem(item: FairItemDto): FairItem {
+  return {
+    ...item,
+    category: item.category ?? "",
+    notes: item.notes ?? "",
+    imageUrl: item.imageUrl ?? ""
+  };
+}
 
-      return {
-        itemsByFair: {
-          ...state.itemsByFair,
-          [state.selectedFairId]: currentItems.map((item) =>
-            item.id === itemId ? { ...item, purchased: !item.purchased } : item
-          )
-        }
-      };
-    }),
-  updateItem: (itemId, input) =>
-    set((state) => {
-      const currentItems = state.itemsByFair[state.selectedFairId] ?? [];
-      let totalDelta = 0;
-      const nextItems = currentItems.map((item) => {
-        if (item.id !== itemId) {
-          return item;
-        }
+function mapItemsByFair(itemsByFair: Record<string, FairItemDto[]>) {
+  return Object.fromEntries(Object.entries(itemsByFair).map(([fairId, items]) => [fairId, items.map(mapItem)]));
+}
 
-        const nextItem = recalculateItem({ ...item, ...input });
-        totalDelta = nextItem.totalPrice - item.totalPrice;
-        return nextItem;
-      });
+function applyItems(state: FairState, fairId: string, items: FairItem[]) {
+  const total = Number(items.reduce((sum, item) => sum + item.totalPrice, 0).toFixed(2));
 
-      return {
-        fairs: state.fairs.map((fair) =>
-          fair.id === state.selectedFairId
-            ? { ...fair, total: Number((fair.total + totalDelta).toFixed(2)) }
-            : fair
-        ),
-        itemsByFair: {
-          ...state.itemsByFair,
-          [state.selectedFairId]: nextItems
-        }
-      };
-    })
-}));
+  return {
+    itemsByFair: {
+      ...state.itemsByFair,
+      [fairId]: items
+    },
+    fairs: state.fairs.map((fair) => (fair.id === fairId ? { ...fair, total } : fair))
+  };
+}
+
+function sortFairs(a: Fair, b: Fair) {
+  return b.year - a.year || b.month - a.month;
+}
+
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return "Nao foi possivel carregar as feiras.";
+}

@@ -14,10 +14,17 @@ type ClientToServerEvents = {
 };
 
 type ServerToClientEvents = {
+  "fair:updated": (payload: RealtimeFairEvent) => void;
+  "fair:deleted": (payload: RealtimeFairEvent) => void;
   "item:created": (payload: RealtimeItemEvent) => void;
   "item:updated": (payload: RealtimeItemEvent) => void;
   "item:deleted": (payload: RealtimeItemEvent) => void;
   "budget:updated": (payload: RealtimeBudgetEvent) => void;
+};
+
+export type RealtimeFairEvent = {
+  fairId: string;
+  changedBy?: string;
 };
 
 export type RealtimeItemEvent = {

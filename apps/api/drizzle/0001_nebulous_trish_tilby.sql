@@ -1,0 +1,1 @@
+ALTER TABLE "fair_items" ADD COLUMN "image_url" text;

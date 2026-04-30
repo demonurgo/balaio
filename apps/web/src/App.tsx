@@ -28,6 +28,7 @@ import type { ChangeEvent, KeyboardEvent, PointerEvent, ReactNode } from "react"
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AuthScreen } from "./auth/AuthScreen";
 import { triggerHaptic, triggerHapticDuration } from "./lib/haptics";
+import { socket } from "./lib/realtime";
 import { playSound } from "./lib/sound";
 import { useAuthStore } from "./state/useAuthStore";
 import { useFairStore } from "./state/useFairStore";
@@ -36,7 +37,10 @@ import { useThemeStore } from "./state/useThemeStore";
 
 const emptyFair = {
   id: "empty",
+  name: "Sem feira",
   label: "Sem feira",
+  month: 1,
+  year: 2026,
   budget: 1,
   total: 0,
   memberCount: 0
@@ -80,12 +84,19 @@ function App() {
   const [route, setRoute] = useState<RouteState>(getRouteFromHash);
   const view = route.view;
   const fairs = useFairStore((state) => state.fairs);
+  const fairStatus = useFairStore((state) => state.status);
+  const fairError = useFairStore((state) => state.error);
+  const loadFairs = useFairStore((state) => state.loadFairs);
   const selectedFairId = useFairStore((state) => state.selectedFairId);
   const selectFair = useFairStore((state) => state.selectFair);
   const itemsByFair = useFairStore((state) => state.itemsByFair);
   const items = itemsByFair[selectedFairId] ?? [];
   const togglePurchased = useFairStore((state) => state.togglePurchased);
   const updateItem = useFairStore((state) => state.updateItem);
+  const createFair = useFairStore((state) => state.createFair);
+  const updateFair = useFairStore((state) => state.updateFair);
+  const createItem = useFairStore((state) => state.createItem);
+  const deleteItem = useFairStore((state) => state.deleteItem);
   const selectedFair = fairs.find((fair) => fair.id === selectedFairId) ?? fairs[0] ?? emptyFair;
   const latestFairs = useMemo(() => fairs.slice(0, 3), [fairs]);
   const totalItemsCount = useMemo(() => Object.values(itemsByFair).reduce((count, fairItems) => count + fairItems.length, 0), [itemsByFair]);
@@ -102,6 +113,12 @@ function App() {
   }, [loadMe]);
 
   useEffect(() => {
+    if (authStatus === "authenticated") {
+      void loadFairs();
+    }
+  }, [authStatus, loadFairs]);
+
+  useEffect(() => {
     const syncView = () => setRoute(getRouteFromHash());
     syncView();
     window.addEventListener("hashchange", syncView);
@@ -114,10 +131,35 @@ function App() {
     }
   }, [route.fairId, route.view, selectFair]);
 
+  useEffect(() => {
+    if (authStatus !== "authenticated" || !selectedFairId) {
+      return;
+    }
+
+    socket.connect();
+    socket.emit("fair:join", { fairId: selectedFairId });
+
+    const refresh = () => void loadFairs();
+    socket.on("fair:updated", refresh);
+    socket.on("fair:deleted", refresh);
+    socket.on("item:created", refresh);
+    socket.on("item:updated", refresh);
+    socket.on("item:deleted", refresh);
+
+    return () => {
+      socket.emit("fair:leave", { fairId: selectedFairId });
+      socket.off("fair:updated", refresh);
+      socket.off("fair:deleted", refresh);
+      socket.off("item:created", refresh);
+      socket.off("item:updated", refresh);
+      socket.off("item:deleted", refresh);
+    };
+  }, [authStatus, loadFairs, selectedFairId]);
+
   const totals = useMemo(() => {
     const total = items.reduce((sum, item) => sum + item.totalPrice, 0);
     const remaining = selectedFair.budget - total;
-    const percent = Math.min(Math.round((total / selectedFair.budget) * 100), 999);
+    const percent = selectedFair.budget > 0 ? Math.min(Math.round((total / selectedFair.budget) * 100), 999) : 0;
 
     return { total, remaining, percent };
   }, [items, selectedFair.budget]);
@@ -142,6 +184,17 @@ function App() {
     const opts: KeyframeAnimationOptions = { duration: 590, easing: "ease-in-out" };
     desktopBrandRef.current?.animate(keyframes, opts);
     mobileBrandRef.current?.animate(keyframes, opts);
+  };
+
+  const handleCreateFair = async () => {
+    triggerHaptic("medium");
+    const next = getNextFairDate(fairs[0]);
+    const fair = await createFair({
+      month: next.month,
+      year: next.year,
+      budget: 0
+    });
+    window.location.hash = `feira/${fair.id}`;
   };
 
   if (authStatus === "loading") {
@@ -213,7 +266,7 @@ function App() {
           >
             {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
           </button>
-          <button className="primary-button add-fair-button" type="button" onClick={() => triggerHaptic("medium")}>
+          <button className="primary-button add-fair-button" type="button" onClick={() => void handleCreateFair()}>
             <Plus size={17} />
             <span>Nova feira</span>
           </button>
@@ -231,6 +284,7 @@ function App() {
           />
         ) : view === "produto" && routeItem ? (
           <ProductPage
+            deleteItem={deleteItem}
             fair={selectedFair}
             item={routeItem}
             onBack={() => {
@@ -244,6 +298,7 @@ function App() {
           <FairPage
             fair={selectedFair}
             items={items}
+            createItem={createItem}
             onBack={() => {
               triggerHaptic("light");
               window.location.hash = "feiras";
@@ -254,6 +309,7 @@ function App() {
             }}
             togglePurchased={togglePurchased}
             totals={totals}
+            updateFair={updateFair}
             updateItem={updateItem}
           />
         ) : (
@@ -269,9 +325,15 @@ function App() {
             </div>
 
             <div className="fair-list">
+              {fairStatus === "loading" ? (
+                <p className="inline-state">Carregando feiras...</p>
+              ) : null}
+              {fairStatus === "error" ? (
+                <p className="inline-state error">{fairError}</p>
+              ) : null}
               {latestFairs.map((fair) => {
                 const isActive = fair.id === selectedFairId;
-                const progress = Math.min(Math.round((fair.total / fair.budget) * 100), 100);
+                const progress = fair.budget > 0 ? Math.min(Math.round((fair.total / fair.budget) * 100), 100) : 0;
 
                 return (
                   <button
@@ -513,32 +575,93 @@ type ProfilePageProps = {
   updateProfile: (values: { firstName: string; lastName: string; birthDate: string; email: string }) => Promise<void>;
 };
 
-type UpdateFairItem = (itemId: string, input: Partial<Omit<FairItem, "id" | "totalPrice">>) => void;
+type UpdateFairItem = (itemId: string, input: Partial<Omit<FairItem, "id" | "fairId" | "totalPrice">>) => Promise<void>;
+type CreateFairItem = (fairId: string, input: { name: string; quantity?: number; unitPrice?: number; unit?: string }) => Promise<void>;
+type UpdateFair = (fairId: string, input: Partial<Pick<Fair, "name" | "month" | "year" | "budget">>) => Promise<void>;
 
 type FairPageProps = {
   fair: Fair;
   items: FairItem[];
+  createItem: CreateFairItem;
   onBack: () => void;
   onOpenProduct: (itemId: string) => void;
-  togglePurchased: (itemId: string) => void;
+  togglePurchased: (itemId: string) => Promise<void>;
   totals: { total: number; remaining: number; percent: number };
+  updateFair: UpdateFair;
   updateItem: UpdateFairItem;
 };
 
 type ProductPageProps = {
+  deleteItem: (itemId: string) => Promise<void>;
   fair: Fair;
   item: FairItem;
   onBack: () => void;
-  togglePurchased: (itemId: string) => void;
+  togglePurchased: (itemId: string) => Promise<void>;
   updateItem: UpdateFairItem;
 };
 
 type ItemField = "name" | "price" | "quantity";
 
-function FairPage({ fair, items, onBack, onOpenProduct, togglePurchased, totals, updateItem }: FairPageProps) {
+function FairPage({ fair, items, createItem, onBack, onOpenProduct, togglePurchased, totals, updateFair, updateItem }: FairPageProps) {
   const purchasedItems = items.filter((item) => item.purchased);
   const purchasedTotal = purchasedItems.reduce((sum, item) => sum + item.totalPrice, 0);
   const pendingTotal = items.filter((item) => !item.purchased).reduce((sum, item) => sum + item.totalPrice, 0);
+  const [editingBudget, setEditingBudget] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [budgetDraft, setBudgetDraft] = useState(String(fair.budget).replace(".", ","));
+  const [nameDraft, setNameDraft] = useState(fair.name);
+  const [showNewItem, setShowNewItem] = useState(false);
+  const [newItem, setNewItem] = useState({ name: "", price: "", quantity: "1" });
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!editingBudget) {
+      setBudgetDraft(String(fair.budget).replace(".", ","));
+    }
+
+    if (!editingName) {
+      setNameDraft(fair.name);
+    }
+  }, [editingBudget, editingName, fair.budget, fair.name]);
+
+  const saveBudget = async () => {
+    setEditingBudget(false);
+    await updateFair(fair.id, { budget: parseMoneyInput(budgetDraft) });
+    triggerHaptic("success");
+  };
+
+  const saveName = async () => {
+    const name = nameDraft.trim();
+
+    if (!name) {
+      setNameDraft(fair.name);
+      setEditingName(false);
+      return;
+    }
+
+    setEditingName(false);
+    await updateFair(fair.id, { name });
+    triggerHaptic("success");
+  };
+
+  const saveNewItem = async () => {
+    const name = newItem.name.trim();
+
+    if (!name) {
+      return;
+    }
+
+    setSaving(true);
+    await createItem(fair.id, {
+      name,
+      quantity: parseQuantityInput(newItem.quantity),
+      unitPrice: parseMoneyInput(newItem.price)
+    });
+    setNewItem({ name: "", price: "", quantity: "1" });
+    setShowNewItem(false);
+    setSaving(false);
+    triggerHaptic("success");
+  };
 
   return (
     <section className="fair-screen" aria-label={`Feira ${fair.label}`}>
@@ -547,7 +670,32 @@ function FairPage({ fair, items, onBack, onOpenProduct, togglePurchased, totals,
           <ArrowLeft size={19} />
         </button>
         <div>
-          <h1>{fair.label}</h1>
+          {editingName ? (
+            <input
+              autoFocus
+              className="fair-title-input"
+              value={nameDraft}
+              onBlur={() => void saveName()}
+              onChange={(event) => setNameDraft(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  void saveName();
+                }
+              }}
+            />
+          ) : (
+            <button
+              className="fair-title-button"
+              type="button"
+              onClick={() => {
+                triggerHaptic("selection");
+                setEditingName(true);
+              }}
+            >
+              <h1>{fair.label}</h1>
+            </button>
+          )}
           <p>{fair.memberCount} pessoas editando</p>
         </div>
         <button className="icon-button fair-menu-button" type="button" aria-label="Mais opcoes" onClick={() => triggerHaptic("light")}>
@@ -556,6 +704,36 @@ function FairPage({ fair, items, onBack, onOpenProduct, togglePurchased, totals,
       </header>
 
       <div className="fair-total-line" aria-label="Resumo da feira">
+        <span>
+          <small>Orcamento</small>
+          {editingBudget ? (
+            <input
+              autoFocus
+              className="budget-inline-input"
+              inputMode="decimal"
+              value={budgetDraft}
+              onBlur={() => void saveBudget()}
+              onChange={(event) => setBudgetDraft(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  void saveBudget();
+                }
+              }}
+            />
+          ) : (
+            <button
+              className="budget-inline-button"
+              type="button"
+              onClick={() => {
+                triggerHaptic("selection");
+                setEditingBudget(true);
+              }}
+            >
+              {formatCurrency(fair.budget)}
+            </button>
+          )}
+        </span>
         <span>
           <small>Total</small>
           <strong>{formatCurrency(totals.total)}</strong>
@@ -571,6 +749,7 @@ function FairPage({ fair, items, onBack, onOpenProduct, togglePurchased, totals,
       </div>
 
       <div className="todo-list" aria-label="Itens da feira">
+        {items.length === 0 ? <p className="empty-list">Ainda sem itens.</p> : null}
         {items.map((item) => (
           <FairTodoRow
             item={item}
@@ -582,7 +761,55 @@ function FairPage({ fair, items, onBack, onOpenProduct, togglePurchased, totals,
         ))}
       </div>
 
-      <button className="add-item-strip" type="button" onClick={() => triggerHaptic("medium")}>
+      {showNewItem ? (
+        <form
+          className="new-item-form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void saveNewItem();
+          }}
+        >
+          <input
+            autoFocus
+            placeholder="Nome do item"
+            value={newItem.name}
+            onChange={(event) => setNewItem((current) => ({ ...current, name: event.target.value }))}
+          />
+          <input
+            inputMode="decimal"
+            placeholder="Preco"
+            value={newItem.price}
+            onChange={(event) => setNewItem((current) => ({ ...current, price: event.target.value }))}
+          />
+          <input
+            inputMode="numeric"
+            placeholder="Qtd"
+            value={newItem.quantity}
+            onChange={(event) => setNewItem((current) => ({ ...current, quantity: event.target.value }))}
+          />
+          <button type="submit" disabled={saving}>
+            <Check size={16} />
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              triggerHaptic("light");
+              setShowNewItem(false);
+            }}
+          >
+            <X size={16} />
+          </button>
+        </form>
+      ) : null}
+
+      <button
+        className="add-item-strip"
+        type="button"
+        onClick={() => {
+          triggerHaptic("medium");
+          setShowNewItem(true);
+        }}
+      >
         <Plus size={18} />
         Adicionar item
       </button>
@@ -593,7 +820,7 @@ function FairPage({ fair, items, onBack, onOpenProduct, togglePurchased, totals,
 type FairTodoRowProps = {
   item: FairItem;
   onOpenDetail: () => void;
-  togglePurchased: (itemId: string) => void;
+  togglePurchased: (itemId: string) => Promise<void>;
   updateItem: UpdateFairItem;
 };
 
@@ -653,18 +880,18 @@ function FairTodoRow({ item, onOpenDetail, togglePurchased, updateItem }: FairTo
       const name = draft.name.trim();
 
       if (name) {
-        updateItem(item.id, { name });
+        void updateItem(item.id, { name });
         triggerHaptic("success");
       }
     }
 
     if (field === "price") {
-      updateItem(item.id, { unitPrice: parseMoneyInput(draft.price) });
+      void updateItem(item.id, { unitPrice: parseMoneyInput(draft.price) });
       triggerHaptic("success");
     }
 
     if (field === "quantity") {
-      updateItem(item.id, { quantity: parseQuantityInput(draft.quantity) });
+      void updateItem(item.id, { quantity: parseQuantityInput(draft.quantity) });
       triggerHaptic("success");
     }
 
@@ -697,7 +924,7 @@ function FairTodoRow({ item, onOpenDetail, togglePurchased, updateItem }: FairTo
         aria-label={item.purchased ? `${item.name} comprado` : `Marcar ${item.name} como comprado`}
         onClick={() => {
           triggerHaptic("success");
-          togglePurchased(item.id);
+          void togglePurchased(item.id);
         }}
       >
         {item.purchased ? <Check size={15} /> : null}
@@ -763,7 +990,7 @@ function FairTodoRow({ item, onOpenDetail, togglePurchased, updateItem }: FairTo
   );
 }
 
-function ProductPage({ fair, item, onBack, togglePurchased, updateItem }: ProductPageProps) {
+function ProductPage({ deleteItem, fair, item, onBack, togglePurchased, updateItem }: ProductPageProps) {
   const [draft, setDraft] = useState({
     name: item.name,
     price: String(item.unitPrice).replace(".", ","),
@@ -782,8 +1009,8 @@ function ProductPage({ fair, item, onBack, togglePurchased, updateItem }: Produc
     });
   }, [item.category, item.name, item.notes, item.quantity, item.unitPrice]);
 
-  const saveProduct = () => {
-    updateItem(item.id, {
+  const saveProduct = async () => {
+    await updateItem(item.id, {
       name: draft.name.trim() || item.name,
       unitPrice: parseMoneyInput(draft.price),
       quantity: parseQuantityInput(draft.quantity),
@@ -802,7 +1029,7 @@ function ProductPage({ fair, item, onBack, togglePurchased, updateItem }: Produc
 
     const reader = new FileReader();
     reader.onload = () => {
-      updateItem(item.id, { imageUrl: String(reader.result ?? "") });
+      void updateItem(item.id, { imageUrl: String(reader.result ?? "") });
       triggerHaptic("success");
     };
     reader.readAsDataURL(file);
@@ -823,7 +1050,7 @@ function ProductPage({ fair, item, onBack, togglePurchased, updateItem }: Produc
           type="button"
           onClick={() => {
             triggerHaptic("success");
-            togglePurchased(item.id);
+            void togglePurchased(item.id);
           }}
         >
           {item.purchased ? <Check size={15} /> : <Circle size={15} />}
@@ -885,10 +1112,25 @@ function ProductPage({ fair, item, onBack, togglePurchased, updateItem }: Produc
         </label>
       </div>
 
-      <button className="product-save" type="button" onClick={saveProduct}>
-        <Check size={17} />
-        Salvar produto
-      </button>
+      <div className="product-actions">
+        <button className="product-save" type="button" onClick={() => void saveProduct()}>
+          <Check size={17} />
+          Salvar produto
+        </button>
+        <button
+          className="product-delete"
+          type="button"
+          onClick={() => {
+            if (window.confirm("Excluir este item?")) {
+              triggerHaptic("light");
+              void deleteItem(item.id).then(onBack);
+            }
+          }}
+        >
+          <Trash2 size={17} />
+          Excluir
+        </button>
+      </div>
     </section>
   );
 }
@@ -1379,6 +1621,19 @@ function parseQuantityInput(value: string) {
   }
 
   return Math.max(1, parsed);
+}
+
+function getNextFairDate(current?: Pick<Fair, "month" | "year">) {
+  if (!current) {
+    const date = new Date();
+    return { month: date.getMonth() + 1, year: date.getFullYear() };
+  }
+
+  if (current.month === 12) {
+    return { month: 1, year: current.year + 1 };
+  }
+
+  return { month: current.month + 1, year: current.year };
 }
 
 function parseDate(value: string) {

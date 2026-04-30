@@ -16,7 +16,8 @@ type CreateAppOptions = {
 
 export async function createApp(options: CreateAppOptions = {}) {
   const app = Fastify({
-    logger: true
+    logger: true,
+    bodyLimit: 3 * 1024 * 1024
   });
 
   await app.register(cors, {

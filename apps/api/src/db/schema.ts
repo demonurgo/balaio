@@ -77,6 +77,7 @@ export const fairItems = pgTable("fair_items", {
   purchased: boolean("purchased").notNull().default(false),
   category: varchar("category", { length: 80 }),
   notes: text("notes"),
+  imageUrl: text("image_url"),
   position: integer("position").notNull().default(0),
   updatedBy: uuid("updated_by").references(() => users.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
