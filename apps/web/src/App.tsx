@@ -1,5 +1,6 @@
 import {
   ArrowLeft,
+  BadgeCheck,
   CalendarDays,
   Check,
   CheckCircle2,
@@ -12,6 +13,7 @@ import {
   MoreHorizontal,
   Plus,
   Share2,
+  ShieldCheck,
   ShoppingBasket,
   Sun,
   Trash2,
@@ -36,10 +38,23 @@ const emptyFair = {
   memberCount: 0
 };
 
+type View = "feiras" | "calendario" | "orcamento" | "perfil";
+
+function getViewFromHash(): View {
+  if (typeof window === "undefined") {
+    return "feiras";
+  }
+
+  const value = window.location.hash.replace("#", "");
+  return value === "calendario" || value === "orcamento" || value === "perfil" ? value : "feiras";
+}
+
 function App() {
   const authStatus = useAuthStore((state) => state.status);
+  const user = useAuthStore((state) => state.user);
   const loadMe = useAuthStore((state) => state.loadMe);
   const logout = useAuthStore((state) => state.logout);
+  const [view, setView] = useState<View>(getViewFromHash);
   const fairs = useFairStore((state) => state.fairs);
   const selectedFairId = useFairStore((state) => state.selectedFairId);
   const selectFair = useFairStore((state) => state.selectFair);
@@ -58,6 +73,13 @@ function App() {
   useEffect(() => {
     void loadMe();
   }, [loadMe]);
+
+  useEffect(() => {
+    const syncView = () => setView(getViewFromHash());
+    syncView();
+    window.addEventListener("hashchange", syncView);
+    return () => window.removeEventListener("hashchange", syncView);
+  }, []);
 
   const totals = useMemo(() => {
     const total = items.reduce((sum, item) => sum + item.totalPrice, 0);
@@ -108,35 +130,31 @@ function App() {
         </button>
 
         <nav className="nav-list" aria-label="Principal">
-          <a className="nav-item active" href="#feiras" onClick={() => triggerHaptic("selection")}>
+          <a className={view === "feiras" ? "nav-item active" : "nav-item"} href="#feiras" onClick={() => triggerHaptic("selection")}>
             <ShoppingBasket size={19} />
             Feiras
           </a>
-          <a className="nav-item" href="#calendario" onClick={() => triggerHaptic("selection")}>
+          <a
+            className={view === "calendario" ? "nav-item active" : "nav-item"}
+            href="#calendario"
+            onClick={() => triggerHaptic("selection")}
+          >
             <CalendarDays size={19} />
             Calendario
           </a>
-          <a className="nav-item" href="#orcamento" onClick={() => triggerHaptic("selection")}>
+          <a
+            className={view === "orcamento" ? "nav-item active" : "nav-item"}
+            href="#orcamento"
+            onClick={() => triggerHaptic("selection")}
+          >
             <Wallet size={19} />
             Orcamento
           </a>
-          <a className="nav-item" href="#perfil" onClick={() => triggerHaptic("selection")}>
+          <a className={view === "perfil" ? "nav-item active" : "nav-item"} href="#perfil" onClick={() => triggerHaptic("selection")}>
             <UserRound size={19} />
             Perfil
           </a>
         </nav>
-
-        <button
-          className="nav-item settings"
-          type="button"
-          onClick={() => {
-            triggerHaptic("light");
-            void logout();
-          }}
-        >
-          <LogOut size={19} />
-          Sair
-        </button>
       </aside>
 
       <section className="content">
@@ -167,6 +185,9 @@ function App() {
           </button>
         </header>
 
+        {view === "perfil" ? (
+          <ProfilePage user={user} logout={logout} theme={theme} toggleTheme={toggleTheme} />
+        ) : (
         <div className="workspace">
           <section className="month-panel" id="feiras">
             <div className="section-heading">
@@ -362,22 +383,27 @@ function App() {
             </footer>
           </section>
         </div>
+        )}
       </section>
 
       <nav className="bottom-tabs" aria-label="Navegacao principal">
-        <a className="bottom-tab active" href="#feiras" onClick={() => triggerHaptic("selection")}>
+        <a className={view === "feiras" ? "bottom-tab active" : "bottom-tab"} href="#feiras" onClick={() => triggerHaptic("selection")}>
           <ShoppingBasket size={22} />
           <span>Feiras</span>
         </a>
-        <a className="bottom-tab" href="#calendario" onClick={() => triggerHaptic("selection")}>
+        <a
+          className={view === "calendario" ? "bottom-tab active" : "bottom-tab"}
+          href="#calendario"
+          onClick={() => triggerHaptic("selection")}
+        >
           <CalendarDays size={22} />
           <span>Calendario</span>
         </a>
-        <a className="bottom-tab" href="#orcamento" onClick={() => triggerHaptic("selection")}>
+        <a className={view === "orcamento" ? "bottom-tab active" : "bottom-tab"} href="#orcamento" onClick={() => triggerHaptic("selection")}>
           <Wallet size={22} />
           <span>Orcamento</span>
         </a>
-        <a className="bottom-tab" href="#perfil" onClick={() => triggerHaptic("selection")}>
+        <a className={view === "perfil" ? "bottom-tab active" : "bottom-tab"} href="#perfil" onClick={() => triggerHaptic("selection")}>
           <UserRound size={22} />
           <span>Perfil</span>
         </a>
@@ -398,6 +424,131 @@ type DashboardChartsProps = {
   items: FairItem[];
   selectedFair: Fair;
 };
+
+type ProfilePageProps = {
+  user: ReturnType<typeof useAuthStore.getState>["user"];
+  logout: () => Promise<void>;
+  theme: "light" | "dark";
+  toggleTheme: () => void;
+};
+
+function ProfilePage({ user, logout, theme, toggleTheme }: ProfilePageProps) {
+  const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(" ") || user?.name || "Perfil Balaio";
+  const firstName = user?.firstName || fullName.split(" ")[0] || "Perfil";
+  const lastName = user?.lastName || fullName.split(" ").slice(1).join(" ") || "Balaio";
+  const birthDate = user?.birthDate ?? "";
+  const age = getAge(birthDate);
+  const birthday = formatDate(birthDate);
+  const initials = getInitials(firstName, lastName);
+  const profileCode = getProfileCode(user?.id ?? "");
+
+  return (
+    <section className="profile-page" id="perfil" aria-label="Perfil">
+      <div className="section-heading profile-heading">
+        <h1>Perfil</h1>
+      </div>
+
+      <section className="profile-card" aria-label="Cartao do perfil">
+        <div className="profile-hero">
+          <div className="profile-avatar" aria-hidden="true">
+            <span>{initials}</span>
+            <i>
+              <BadgeCheck size={17} />
+            </i>
+          </div>
+
+          <div className="profile-identity">
+            <h2>
+              {firstName}
+              <br />
+              {lastName}
+            </h2>
+            <div className="profile-facts">
+              <span>
+                <strong>Conta</strong>
+                <small>TIPO</small>
+              </span>
+              <span>
+                <strong>{age}</strong>
+                <small>IDADE</small>
+              </span>
+              <span>
+                <strong>{birthday}</strong>
+                <small>NASC.</small>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="profile-pass">
+          <strong>{profileCode}</strong>
+          <span>Ativa</span>
+        </div>
+      </section>
+
+      <section className="profile-section" aria-label="Dados da conta">
+        <h2>Conta</h2>
+        <div className="profile-list">
+          <ProfileRow label="Nome" value={fullName} icon={<UserRound size={18} />} />
+          <ProfileRow label="Email" value={user?.email ?? "-"} icon={<ShieldCheck size={18} />} />
+          <ProfileRow label="Nascimento" value={birthday} icon={<CalendarDays size={18} />} />
+        </div>
+      </section>
+
+      <section className="profile-section" aria-label="Preferencias">
+        <h2>Preferências</h2>
+        <div className="profile-list">
+          <button
+            className="profile-row profile-row-button"
+            type="button"
+            onClick={() => {
+              triggerHaptic("selection");
+              toggleTheme();
+            }}
+          >
+            <span className="profile-row-icon">{theme === "dark" ? <Moon size={18} /> : <Sun size={18} />}</span>
+            <span>
+              <small>Tema</small>
+              <strong>{theme === "dark" ? "Escuro" : "Claro"}</strong>
+            </span>
+            <ChevronRight size={18} />
+          </button>
+          <ProfileRow label="Haptics" value="Ativo" icon={<CheckCircle2 size={18} />} />
+        </div>
+      </section>
+
+      <button
+        className="profile-logout"
+        type="button"
+        onClick={() => {
+          triggerHaptic("light");
+          void logout();
+        }}
+      >
+        <LogOut size={18} />
+        Sair da conta
+      </button>
+    </section>
+  );
+}
+
+type ProfileRowProps = {
+  label: string;
+  value: string;
+  icon: ReactNode;
+};
+
+function ProfileRow({ label, value, icon }: ProfileRowProps) {
+  return (
+    <div className="profile-row">
+      <span className="profile-row-icon">{icon}</span>
+      <span>
+        <small>{label}</small>
+        <strong>{value}</strong>
+      </span>
+    </div>
+  );
+}
 
 function DashboardCharts({ fairs, items, selectedFair }: DashboardChartsProps) {
   const trendFairs = fairs.slice(0, 4).reverse();
@@ -525,6 +676,66 @@ function formatCurrency(value: number) {
     style: "currency",
     currency: "BRL"
   }).format(value);
+}
+
+function parseDate(value: string) {
+  const [year, month, day] = value.split("-").map(Number);
+
+  if (!year || !month || !day) {
+    return null;
+  }
+
+  return new Date(year, month - 1, day);
+}
+
+function getAge(value: string) {
+  const birthDate = parseDate(value);
+
+  if (!birthDate) {
+    return "-";
+  }
+
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const hadBirthday =
+    today.getMonth() > birthDate.getMonth() ||
+    (today.getMonth() === birthDate.getMonth() && today.getDate() >= birthDate.getDate());
+
+  if (!hadBirthday) {
+    age -= 1;
+  }
+
+  return String(age);
+}
+
+function formatDate(value: string) {
+  const date = parseDate(value);
+
+  if (!date) {
+    return "-";
+  }
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  }).format(date);
+}
+
+function getInitials(firstName: string, lastName: string) {
+  const first = firstName.trim().charAt(0);
+  const last = lastName.trim().charAt(0);
+  return `${first}${last}`.toUpperCase() || "BL";
+}
+
+function getProfileCode(id: string) {
+  const clean = id.replaceAll("-", "").toUpperCase();
+
+  if (clean.length < 8) {
+    return "BL-0000";
+  }
+
+  return `BL-${clean.slice(0, 4)}-${clean.slice(4, 8)}`;
 }
 
 export default App;
