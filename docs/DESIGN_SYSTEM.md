@@ -225,48 +225,50 @@ Icones necessarios:
 
 Objetivo:
 
-- dar nocao rapida de gasto, orcamento e ritmo da feira
-- mostrar progresso sem virar tela de relatorio pesado
+- dar nocao rapida de gasto e orcamento
+- mostrar poucos graficos bonitos, simples e pequenos
 - favorecer acao imediata: abrir feira, marcar comprado, ajustar preco
 
 Blocos recomendados:
 
 - resumo do mes: total atual, orcamento, restante e percentual usado
 - progresso de compras: itens comprados vs itens pendentes
-- tendencia mensal: total dos ultimos meses em linha simples
-- comparativo por categoria: mercado, feira, limpeza, carnes, frutas etc.
-- maiores gastos: top 5 itens por valor total
-- alertas discretos: orcamento perto do limite, item muito acima do normal, preco faltando
-- atividade ao vivo: quem alterou, comprou ou esta editando
-- atalhos: importar mes anterior, adicionar item, compartilhar feira
+- tendencia mensal: total dos ultimos meses em linha discreta
+- categorias principais: ate 4 barras compactas
+- alerta discreto apenas quando o orcamento estiver perto do limite ou estourado
 
 Graficos:
 
 - barra horizontal para progresso de orcamento
-- mini linha para evolucao mensal
-- barras compactas para categorias
-- donut/ring apenas para percentual de orcamento, sem excesso
-- evitar graficos grandes no mobile; priorizar numeros e micrograficos
+- mini linha para evolucao dos ultimos meses
+- barras compactas para ate 4 categorias
+- sem donut no MVP, salvo se substituir a barra de orcamento
+- sem tooltips complexos, legenda grande ou eixo pesado
+- graficos sempre baixos, silenciosos e integrados na lista
 
 Layout mobile:
 
 - primeiro bloco deve ser a lista de feiras
-- metricas resumidas podem aparecer abaixo da lista ou numa aba Orcamento
-- graficos devem ocupar largura total e altura baixa
+- resumo e graficos devem aparecer abaixo da lista ou numa aba Orcamento
+- altura maxima sugerida por grafico: 88px
 - nao usar cards aninhados; usar divisores e secoes
 
 Layout desktop:
 
 - lista de feiras a esquerda
 - feira aberta no centro/direita
-- resumo financeiro lateral ou inferior
-- graficos pequenos, com leitura em 3 segundos
+- resumo financeiro discreto lateral ou inferior
+- no maximo 3 graficos visiveis por tela
 
 Biblioteca:
 
 - comecar com SVG/CSS proprio para micrograficos
 - adicionar biblioteca de chart apenas se houver zoom, tooltip avancado ou filtros complexos
 - se entrar biblioteca, manter bundle baixo e renderizacao simples
+
+Regra de corte:
+
+- se um grafico nao ajuda a decidir compra, preco ou orcamento, ele nao entra
 
 ### Botao Primario
 
