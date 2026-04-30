@@ -160,17 +160,6 @@ function App() {
           >
             {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
           </button>
-          <button
-            className="icon-button logout-icon"
-            type="button"
-            aria-label="Sair"
-            onClick={() => {
-              triggerHaptic("light");
-              void logout();
-            }}
-          >
-            <LogOut size={18} />
-          </button>
           <button className="primary-button add-fair-button" type="button" onClick={() => triggerHaptic("medium")}>
             <Plus size={17} />
             <span>Nova feira</span>

@@ -914,10 +914,6 @@ h2 {
   animation: spin 0.8s linear infinite;
 }
 
-.logout-icon {
-  display: none;
-}
-
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -984,15 +980,6 @@ h2 {
     width: 20px;
     height: 20px;
     stroke-width: 1.8;
-  }
-
-  .logout-icon {
-    display: inline-flex;
-    width: 34px;
-    min-height: 34px;
-    border: 0;
-    color: var(--color-text);
-    background: transparent;
   }
 
   .add-fair-button {
