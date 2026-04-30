@@ -745,7 +745,7 @@ h2 {
     padding:
       0
       14px
-      calc(104px + env(safe-area-inset-bottom));
+      calc(88px + env(safe-area-inset-bottom));
   }
 
   .topbar {
@@ -986,7 +986,7 @@ h2 {
     position: fixed;
     left: 20px;
     right: 20px;
-    bottom: max(6px, calc(env(safe-area-inset-bottom) - 12px));
+    bottom: max(2px, calc(env(safe-area-inset-bottom) - 28px));
     z-index: 20;
     display: grid;
     grid-template-columns: repeat(4, 1fr);
