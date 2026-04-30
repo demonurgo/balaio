@@ -27,7 +27,7 @@ The app renders edge-to-edge like a native iOS/Android app, both in Safari mobil
   - **Never replace with `100dvh`.** `100dvh` (dynamic viewport) shrinks when Safari iOS toolbar slides in, leaving a visible white/cream "browser bar" below the body. `100lvh` (largest viewport) always fills the maximum possible screen so the body background extends under any browser chrome.
   - Symptom of regression: horizontal white/cream stripe at the bottom of the screen above the floating bottom-tabs pill, appearing to overlay the tabs.
 - **`html` and `body` keep `height: 100%`** in addition to `min-height`. Both are required for full fill on iOS Safari.
-- **`.bottom-tabs` mobile uses `bottom: 18px`** — floats above the edge with breathing room.
+- **`.bottom-tabs` mobile uses `bottom: 20px`** — floats above the edge with breathing room.
   - Do NOT set to `0` (touches edge, looks docked instead of floating).
   - Do NOT set to `env(safe-area-inset-bottom)` or `calc(env(...) - N)` — creates a visible white gap between the pill and the iOS home indicator gesture area.
 - **`.topbar` mobile uses `padding-top: max(env(safe-area-inset-top), 20px)`** — required to clear the iPhone notch / dynamic island.
@@ -45,7 +45,7 @@ The app renders edge-to-edge like a native iOS/Android app, both in Safari mobil
 
 Diagnostic order:
 
-1. Verify `.bottom-tabs` is `bottom: 18px` (not `0`, not safe-area-bound).
+1. Verify `.bottom-tabs` is `bottom: 20px` (not `0`, not safe-area-bound).
 2. Verify `html`, `body`, `#root`, `.app-shell` all use `100lvh` (NOT `100dvh`).
 3. Verify `index.html` has `viewport-fit=cover`.
 4. If all three are correct and user STILL sees a bar: **they are running the URL in Safari mobile, not as an installed PWA.** Safari iOS shows a URL toolbar at the bottom that no CSS can remove. Tell the user to: Share → "Add to Home Screen" → open from the home screen icon.
