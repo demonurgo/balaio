@@ -874,9 +874,7 @@ h2 {
   border: 1px solid color-mix(in srgb, var(--color-primary) 20%, var(--color-border));
   border-radius: 22px;
   color: var(--color-logo-white);
-  background:
-    radial-gradient(circle at 36% 28%, color-mix(in srgb, var(--color-warning) 28%, transparent), transparent 30%),
-    linear-gradient(140deg, var(--color-primary), var(--color-primary-hover));
+  background: var(--color-primary-hover);
   font-family: var(--font-brand);
   font-size: 56px;
   line-height: 1;
