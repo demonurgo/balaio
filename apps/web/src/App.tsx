@@ -87,8 +87,7 @@ function App() {
       <section className="content">
         <header className="topbar">
           <div className="mobile-brand">
-            <img src="/assets/logo/balaio-symbol.svg" alt="" />
-            <strong>Balaio</strong>
+            <img src={logoSrc} alt="Balaio" />
           </div>
           <div className="collaborators" aria-label="Pessoas online">
             <span className="avatar">MA</span>
