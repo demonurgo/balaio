@@ -325,7 +325,6 @@ function DashboardCharts({ fairs, items, selectedFair }: DashboardChartsProps) {
         <section className="mini-chart trend-panel" aria-label="Ultimos meses">
           <div className="chart-label">
             <span>Ultimos meses</span>
-            <strong>{formatCurrency(selectedTrend.total)}</strong>
           </div>
           <MiniTrendChart fairs={trendFairs} selectedIndex={selectedTrendIndex} onSelect={setSelectedTrendIndex} />
           <p className="trend-meta">
@@ -363,7 +362,6 @@ function MiniTrendChart({ fairs, selectedIndex, onSelect }: MiniTrendChartProps)
 
   return (
     <svg className="trend-chart" viewBox="0 0 160 56" role="img" aria-label="Evolucao de gastos">
-      <line className="trend-grid" x1="0" x2="160" y1="46" y2="46" />
       <polyline className="trend-line" points={polyline} />
       {points.map((point, index) => (
         <g
