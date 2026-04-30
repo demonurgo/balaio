@@ -1,0 +1,23 @@
+{
+  "name": "balaio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,web -c green,yellow \"npm run dev --workspace @balaio/api\" \"npm run dev --workspace @balaio/web\"",
+    "dev:api": "npm run dev --workspace @balaio/api",
+    "dev:web": "npm run dev --workspace @balaio/web",
+    "build": "npm run build --workspace @balaio/shared && npm run build --workspace @balaio/api && npm run build --workspace @balaio/web",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "db:generate": "npm run db:generate --workspace @balaio/api",
+    "db:push": "npm run db:push --workspace @balaio/api"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
