@@ -228,14 +228,14 @@ function App() {
                 <span className="quick-action-icon">
                   <Plus size={18} />
                 </span>
-                <span className="quick-action-label">Adicionar item</span>
+                <span className="quick-action-label">Adicionar</span>
               </button>
               <button className="quick-action" type="button" onClick={() => triggerHaptic("selection")}>
                 <span className="quick-action-icon">
                   <Circle size={18} />
                   <small className="quick-action-badge">{pendingItemsCount}</small>
                 </span>
-                <span className="quick-action-label">Faltando comprar</span>
+                <span className="quick-action-label">Pendentes</span>
               </button>
               <button
                 className="quick-action"
