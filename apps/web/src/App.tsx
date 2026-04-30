@@ -246,19 +246,19 @@ function App() {
 
       <nav className="bottom-tabs" aria-label="Navegacao principal">
         <a className="bottom-tab active" href="#feiras">
-          <ShoppingBasket size={25} />
+          <ShoppingBasket size={22} />
           <span>Feiras</span>
         </a>
         <a className="bottom-tab" href="#calendario">
-          <CalendarDays size={25} />
+          <CalendarDays size={22} />
           <span>Calendario</span>
         </a>
         <a className="bottom-tab" href="#orcamento">
-          <Wallet size={25} />
+          <Wallet size={22} />
           <span>Orcamento</span>
         </a>
         <a className="bottom-tab" href="#perfil">
-          <UserRound size={25} />
+          <UserRound size={22} />
           <span>Perfil</span>
         </a>
       </nav>
