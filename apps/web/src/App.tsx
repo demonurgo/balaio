@@ -853,8 +853,16 @@ function FairTodoRow({ deleteItem, item, onOpenDetail, togglePurchased, updateIt
   const pressTimer = useRef<number | null>(null);
   const longPressFired = useRef(false);
   const swipe = useRef<SwipeState | null>(null);
+  const swipeElement = useRef<HTMLDivElement | null>(null);
+  const detachGlobalSwipe = useRef<(() => void) | null>(null);
   const suppressClick = useRef(false);
   const suppressClickTimer = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      detachGlobalSwipe.current?.();
+    };
+  }, []);
 
   const clearPress = () => {
     if (pressTimer.current) {
@@ -875,6 +883,37 @@ function FairTodoRow({ deleteItem, item, onOpenDetail, togglePurchased, updateIt
       suppressClickTimer.current = null;
     }, 360);
   };
+
+  function detachSwipeRelease() {
+    detachGlobalSwipe.current?.();
+    detachGlobalSwipe.current = null;
+  }
+
+  function releaseSwipePointer(pointerId: number) {
+    const element = swipeElement.current;
+
+    if (element?.hasPointerCapture(pointerId)) {
+      element.releasePointerCapture(pointerId);
+    }
+
+    swipeElement.current = null;
+  }
+
+  function attachSwipeRelease(element: HTMLDivElement) {
+    detachSwipeRelease();
+    swipeElement.current = element;
+
+    const finish = (event: globalThis.PointerEvent) => {
+      finishSwipe(event.pointerId, event);
+    };
+
+    window.addEventListener("pointerup", finish, { capture: true });
+    window.addEventListener("pointercancel", finish, { capture: true });
+    detachGlobalSwipe.current = () => {
+      window.removeEventListener("pointerup", finish, { capture: true });
+      window.removeEventListener("pointercancel", finish, { capture: true });
+    };
+  }
 
   const startPointer = (event: PointerEvent<HTMLDivElement>) => {
     if ((event.pointerType === "mouse" && event.button !== 0) || editing || isRemoving) {
@@ -934,6 +973,7 @@ function FairTodoRow({ deleteItem, item, onOpenDetail, togglePurchased, updateIt
       if (deltaX < -SWIPE_START_DISTANCE) {
         currentSwipe.lock = "swipe";
         event.currentTarget.setPointerCapture(event.pointerId);
+        attachSwipeRelease(event.currentTarget);
         clearPress();
         setIsSwiping(true);
         suppressNextClick();
@@ -968,6 +1008,7 @@ function FairTodoRow({ deleteItem, item, onOpenDetail, togglePurchased, updateIt
 
   const resetSwipe = () => {
     swipe.current = null;
+    detachSwipeRelease();
     clearPress();
     setIsSwiping(false);
     setSwipeArmed(false);
@@ -978,6 +1019,7 @@ function FairTodoRow({ deleteItem, item, onOpenDetail, togglePurchased, updateIt
     const exitDistance = -Math.min(window.innerWidth || 360, 520);
 
     swipe.current = null;
+    detachSwipeRelease();
     clearPress();
     setIsSwiping(false);
     setSwipeArmed(true);
@@ -999,19 +1041,17 @@ function FairTodoRow({ deleteItem, item, onOpenDetail, togglePurchased, updateIt
     return currentSwipe.armed || currentSwipe.rawX >= SWIPE_DELETE_DISTANCE || currentSwipe.visualX >= SWIPE_REVEAL_DISTANCE * 0.9;
   };
 
-  const endPointer = (event: PointerEvent<HTMLDivElement>) => {
+  function finishSwipe(pointerId: number, event?: { preventDefault: () => void }) {
     const currentSwipe = swipe.current;
 
-    if (!currentSwipe || currentSwipe.pointerId !== event.pointerId) {
+    if (!currentSwipe || currentSwipe.pointerId !== pointerId) {
       clearPress();
       return;
     }
 
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    }
-
     swipe.current = null;
+    releaseSwipePointer(pointerId);
+    detachSwipeRelease();
     clearPress();
 
     if (currentSwipe.lock !== "swipe") {
@@ -1020,7 +1060,7 @@ function FairTodoRow({ deleteItem, item, onOpenDetail, togglePurchased, updateIt
       return;
     }
 
-    event.preventDefault();
+    event?.preventDefault();
     suppressNextClick();
 
     if (shouldDeleteSwipe(currentSwipe)) {
@@ -1031,16 +1071,17 @@ function FairTodoRow({ deleteItem, item, onOpenDetail, togglePurchased, updateIt
     setIsSwiping(false);
     setSwipeArmed(false);
     setSwipeX(0);
+  }
+
+  const endPointer = (event: PointerEvent<HTMLDivElement>) => {
+    finishSwipe(event.pointerId, event);
   };
 
   const cancelPointer = (event: PointerEvent<HTMLDivElement>) => {
     const currentSwipe = swipe.current;
 
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    }
-
     if (currentSwipe?.lock === "swipe" && shouldDeleteSwipe(currentSwipe)) {
+      releaseSwipePointer(event.pointerId);
       deleteFromSwipe();
       return;
     }
