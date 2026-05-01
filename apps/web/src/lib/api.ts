@@ -18,12 +18,15 @@ async function readJson(response: Response) {
 }
 
 async function apiRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const headers = new Headers(init.headers);
+
+  if (init.body !== undefined && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+
   const response = await fetch(`${apiUrl}${path}`, {
     credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...init.headers
-    },
+    headers,
     ...init
   });
   const data = await readJson(response);
