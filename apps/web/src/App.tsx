@@ -610,6 +610,7 @@ type SwipeState = {
   startX: number;
   startY: number;
   rawX: number;
+  visualX: number;
   lock: SwipeLock;
   armed: boolean;
 };
@@ -889,6 +890,7 @@ function FairTodoRow({ deleteItem, item, onOpenDetail, togglePurchased, updateIt
       startX: event.clientX,
       startY: event.clientY,
       rawX: 0,
+      visualX: 0,
       lock: null,
       armed: false
     };
@@ -954,6 +956,7 @@ function FairTodoRow({ deleteItem, item, onOpenDetail, togglePurchased, updateIt
     const nextArmed = distance >= SWIPE_DELETE_DISTANCE;
 
     currentSwipe.rawX = distance;
+    currentSwipe.visualX = Math.abs(nextSwipeX);
     setSwipeX(nextSwipeX);
 
     if (nextArmed !== currentSwipe.armed) {
@@ -974,6 +977,7 @@ function FairTodoRow({ deleteItem, item, onOpenDetail, togglePurchased, updateIt
   const deleteFromSwipe = () => {
     const exitDistance = -Math.min(window.innerWidth || 360, 520);
 
+    swipe.current = null;
     clearPress();
     setIsSwiping(false);
     setSwipeArmed(true);
@@ -989,6 +993,10 @@ function FairTodoRow({ deleteItem, item, onOpenDetail, togglePurchased, updateIt
         triggerHaptic("warning");
       });
     }, 150);
+  };
+
+  const shouldDeleteSwipe = (currentSwipe: SwipeState) => {
+    return currentSwipe.armed || currentSwipe.rawX >= SWIPE_DELETE_DISTANCE || currentSwipe.visualX >= SWIPE_REVEAL_DISTANCE * 0.9;
   };
 
   const endPointer = (event: PointerEvent<HTMLDivElement>) => {
@@ -1015,7 +1023,7 @@ function FairTodoRow({ deleteItem, item, onOpenDetail, togglePurchased, updateIt
     event.preventDefault();
     suppressNextClick();
 
-    if (currentSwipe.rawX >= SWIPE_DELETE_DISTANCE) {
+    if (shouldDeleteSwipe(currentSwipe)) {
       deleteFromSwipe();
       return;
     }
@@ -1026,8 +1034,15 @@ function FairTodoRow({ deleteItem, item, onOpenDetail, togglePurchased, updateIt
   };
 
   const cancelPointer = (event: PointerEvent<HTMLDivElement>) => {
+    const currentSwipe = swipe.current;
+
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+
+    if (currentSwipe?.lock === "swipe" && shouldDeleteSwipe(currentSwipe)) {
+      deleteFromSwipe();
+      return;
     }
 
     resetSwipe();
