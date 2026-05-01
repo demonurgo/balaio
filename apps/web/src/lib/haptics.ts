@@ -15,8 +15,20 @@ export type HapticTone =
 
 let haptics: WebHaptics | undefined;
 
+function canUseHaptics() {
+  if (typeof navigator === "undefined" || !("vibrate" in navigator)) {
+    return false;
+  }
+
+  return navigator.userActivation?.hasBeenActive ?? true;
+}
+
 function getHaptics() {
   if (typeof window === "undefined") {
+    return undefined;
+  }
+
+  if (!canUseHaptics()) {
     return undefined;
   }
 
