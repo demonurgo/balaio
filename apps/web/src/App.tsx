@@ -1,18 +1,27 @@
 import {
   ArrowLeft,
+  Apple,
+  Beef,
   CalendarDays,
+  Candy,
+  Carrot,
   Check,
   CheckCircle2,
   ChevronRight,
   Circle,
+  CupSoda,
   Edit3,
+  Fish,
   ImagePlus,
   LayoutList,
   LogOut,
+  Milk,
   Minus,
   Moon,
   MoreHorizontal,
   Plus,
+  Salad,
+  Sandwich,
   Share2,
   ShieldCheck,
   ShoppingBasket,
@@ -618,15 +627,69 @@ type SwipeState = {
 const SWIPE_START_DISTANCE = 8;
 const SWIPE_DELETE_DISTANCE = 118;
 const SWIPE_REVEAL_DISTANCE = 126;
+const CATEGORY_COLORS = ["#f6d957", "#a7bc72", "#eda8cf", "#adc8ed", "#f0a9ce", "#f4c76e", "#9fcbb1", "#c9b8ef"];
+const CATEGORY_ICON_MAP = [
+  { icon: Salad, keywords: ["salada", "saladas"] },
+  { icon: Carrot, keywords: ["legume", "legumes", "verdura", "verduras", "hortifruti"] },
+  { icon: Beef, keywords: ["carne", "carnes", "acougue", "açougue", "frango", "bovina", "suina", "suína"] },
+  { icon: CupSoda, keywords: ["bebida", "bebidas", "suco", "refrigerante", "agua", "água"] },
+  { icon: Sandwich, keywords: ["lanche", "lanches", "padaria", "pao", "pão", "sanduiche", "sanduíche"] },
+  { icon: Milk, keywords: ["leite", "laticinio", "laticínios", "laticinios", "queijo", "iogurte"] },
+  { icon: Fish, keywords: ["peixe", "peixes", "frutos do mar", "camarao", "camarão"] },
+  { icon: Candy, keywords: ["doce", "doces", "sobremesa", "chocolate", "biscoito"] },
+  { icon: Apple, keywords: ["fruta", "frutas"] }
+];
 
 function getResistedSwipe(distance: number) {
   return -Math.min(SWIPE_REVEAL_DISTANCE, distance * 0.82);
+}
+
+function getCategoryLabel(item: FairItem) {
+  const category = item.category?.trim();
+  return category || "Sem categoria";
+}
+
+function getCategoryIcon(label: string) {
+  const normalized = label
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+  return CATEGORY_ICON_MAP.find((entry) => entry.keywords.some((keyword) => normalized.includes(keyword.normalize("NFD").replace(/[\u0300-\u036f]/g, ""))))?.icon ??
+    ShoppingBasket;
+}
+
+function getCategoryBreakdown(items: FairItem[]) {
+  const totals = new Map<string, { label: string; value: number; count: number }>();
+
+  items.forEach((item) => {
+    const label = getCategoryLabel(item);
+    const key = label.toLowerCase();
+    const current = totals.get(key) ?? { label, value: 0, count: 0 };
+    current.value += item.totalPrice;
+    current.count += 1;
+    totals.set(key, current);
+  });
+
+  const total = Array.from(totals.values()).reduce((sum, item) => sum + item.value, 0);
+  const categories = Array.from(totals.values())
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 8)
+    .map((item, index) => ({
+      ...item,
+      color: CATEGORY_COLORS[index % CATEGORY_COLORS.length],
+      Icon: getCategoryIcon(item.label),
+      percent: total > 0 ? Math.round((item.value / total) * 100) : 0
+    }));
+
+  return { categories, total };
 }
 
 function FairPage({ deleteItem, fair, items, createItem, onBack, onOpenProduct, togglePurchased, totals, updateFair, updateItem }: FairPageProps) {
   const purchasedItems = items.filter((item) => item.purchased);
   const purchasedTotal = purchasedItems.reduce((sum, item) => sum + item.totalPrice, 0);
   const pendingTotal = items.filter((item) => !item.purchased).reduce((sum, item) => sum + item.totalPrice, 0);
+  const categoryBreakdown = useMemo(() => getCategoryBreakdown(items), [items]);
   const [editingBudget, setEditingBudget] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [budgetDraft, setBudgetDraft] = useState(String(fair.budget).replace(".", ","));
@@ -761,6 +824,8 @@ function FairPage({ deleteItem, fair, items, createItem, onBack, onOpenProduct, 
         </span>
       </div>
 
+      <CategoryRingChart categories={categoryBreakdown.categories} total={categoryBreakdown.total} />
+
       <div className="todo-list" aria-label="Itens da feira">
         {items.length === 0 ? <p className="empty-list">Ainda sem itens.</p> : null}
         {items.map((item) => (
@@ -838,6 +903,82 @@ type FairTodoRowProps = {
   togglePurchased: (itemId: string) => Promise<void>;
   updateItem: UpdateFairItem;
 };
+type CategoryBreakdownItem = ReturnType<typeof getCategoryBreakdown>["categories"][number];
+
+function CategoryRingChart({ categories, total }: { categories: CategoryBreakdownItem[]; total: number }) {
+  const leading = categories[0];
+  const radius = 78;
+  const circumference = 2 * Math.PI * radius;
+  const gap = categories.length > 1 ? 12 : 0;
+  const available = circumference - gap * categories.length;
+  const getDash = (category: CategoryBreakdownItem) => Math.max((category.percent / 100) * available, categories.length === 1 ? available : 8);
+  const segments = categories.map((category, index) => ({
+    category,
+    dash: getDash(category),
+    offset: categories.slice(0, index).reduce((sum, current) => sum + getDash(current) + gap, 0)
+  }));
+
+  return (
+    <section className="category-ring-card" aria-label="Distribuicao por categoria">
+      <div className="category-ring-copy">
+        <small>Categorias</small>
+        <strong>{categories.length ? `${leading.percent}% ${leading.label}` : "Sem categorias"}</strong>
+      </div>
+
+      <div className="category-ring-visual">
+        <svg className="category-ring-svg" viewBox="0 0 220 220" role="img" aria-label="Grafico de categorias">
+          <circle className="category-ring-track" cx="110" cy="110" r={radius} />
+          {segments.map(({ category, dash, offset }) => {
+            const strokeDashoffset = -offset;
+            const sweep = (dash / circumference) * 360;
+            const angle = -90 + (offset / circumference) * 360 + sweep / 2;
+            const iconRadius = 96;
+            const iconX = 110 + Math.cos((angle * Math.PI) / 180) * iconRadius;
+            const iconY = 110 + Math.sin((angle * Math.PI) / 180) * iconRadius;
+            const Icon = category.Icon;
+
+            return (
+              <g key={category.label}>
+                <circle
+                  className="category-ring-segment"
+                  cx="110"
+                  cy="110"
+                  r={radius}
+                  stroke={category.color}
+                  strokeDasharray={`${dash} ${circumference - dash}`}
+                  strokeDashoffset={strokeDashoffset}
+                />
+                <foreignObject height="34" width="34" x={iconX - 17} y={iconY - 17}>
+                  <span className="category-ring-icon" style={{ backgroundColor: category.color }}>
+                    <Icon size={18} />
+                  </span>
+                </foreignObject>
+              </g>
+            );
+          })}
+        </svg>
+
+        <div className="category-ring-center">
+          <strong>{leading ? `${leading.percent}%` : "0%"}</strong>
+          <span>{leading ? leading.label : "adicione categorias"}</span>
+          <small>{formatCurrency(total)}</small>
+        </div>
+      </div>
+
+      {categories.length ? (
+        <div className="category-ring-legend">
+          {categories.slice(0, 4).map((category) => (
+            <span key={category.label}>
+              <i style={{ backgroundColor: category.color }} />
+              {category.label}
+              <strong>{category.percent}%</strong>
+            </span>
+          ))}
+        </div>
+      ) : null}
+    </section>
+  );
+}
 
 function FairTodoRow({ deleteItem, item, onOpenDetail, togglePurchased, updateItem }: FairTodoRowProps) {
   const [editing, setEditing] = useState<ItemField | null>(null);
