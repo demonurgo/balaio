@@ -975,15 +975,62 @@ h2 {
   font-weight: 700;
 }
 
+.todo-swipe-shell {
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-border) 76%, transparent);
+  --swipe-progress: 0;
+}
+
+.todo-delete-action {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-right: 18px;
+  color: var(--color-logo-white);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--color-danger) 72%, transparent) 58%,
+    var(--color-danger) 100%
+  );
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0;
+  opacity: var(--swipe-progress);
+  pointer-events: none;
+  transform: translate3d(calc((1 - var(--swipe-progress)) * 14px), 0, 0);
+  transition: opacity 150ms cubic-bezier(0.16, 1, 0.3, 1), transform 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.todo-swipe-shell.armed .todo-delete-action {
+  background: linear-gradient(90deg, transparent 0%, var(--color-danger) 50%, var(--color-danger) 100%);
+}
+
 .todo-item {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: 30px minmax(0, 1fr) auto 42px 20px;
   align-items: center;
   gap: 10px;
   min-height: 56px;
-  border-bottom: 1px solid color-mix(in srgb, var(--color-border) 76%, transparent);
   color: var(--color-text);
-  transition: transform 140ms ease, opacity 140ms ease;
+  background: var(--color-bg);
+  touch-action: pan-y;
+  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1), opacity 140ms ease;
+  will-change: transform;
+}
+
+.todo-item.swiping {
+  transition: none;
+}
+
+.todo-item.removing {
+  opacity: 0;
 }
 
 .todo-item:active {

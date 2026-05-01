@@ -24,7 +24,7 @@ import {
   Wallet,
   X
 } from "lucide-react";
-import type { ChangeEvent, KeyboardEvent, PointerEvent, ReactNode } from "react";
+import type { ChangeEvent, CSSProperties, KeyboardEvent, MouseEvent, PointerEvent, ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AuthScreen } from "./auth/AuthScreen";
 import { triggerHaptic, triggerHapticDuration } from "./lib/haptics";
@@ -90,7 +90,7 @@ function App() {
   const selectedFairId = useFairStore((state) => state.selectedFairId);
   const selectFair = useFairStore((state) => state.selectFair);
   const itemsByFair = useFairStore((state) => state.itemsByFair);
-  const items = itemsByFair[selectedFairId] ?? [];
+  const items = useMemo(() => itemsByFair[selectedFairId] ?? [], [itemsByFair, selectedFairId]);
   const togglePurchased = useFairStore((state) => state.togglePurchased);
   const updateItem = useFairStore((state) => state.updateItem);
   const createFair = useFairStore((state) => state.createFair);
@@ -287,6 +287,7 @@ function App() {
             deleteItem={deleteItem}
             fair={selectedFair}
             item={routeItem}
+            key={routeItem.id}
             onBack={() => {
               triggerHaptic("light");
               window.location.hash = `feira/${selectedFair.id}`;
@@ -296,6 +297,7 @@ function App() {
           />
         ) : view === "feira" ? (
           <FairPage
+            deleteItem={deleteItem}
             fair={selectedFair}
             items={items}
             createItem={createItem}
@@ -580,6 +582,7 @@ type CreateFairItem = (fairId: string, input: { name: string; quantity?: number;
 type UpdateFair = (fairId: string, input: Partial<Pick<Fair, "name" | "month" | "year" | "budget">>) => Promise<void>;
 
 type FairPageProps = {
+  deleteItem: (itemId: string) => Promise<void>;
   fair: Fair;
   items: FairItem[];
   createItem: CreateFairItem;
@@ -601,8 +604,25 @@ type ProductPageProps = {
 };
 
 type ItemField = "name" | "price" | "quantity";
+type SwipeLock = "scroll" | "swipe" | null;
+type SwipeState = {
+  pointerId: number;
+  startX: number;
+  startY: number;
+  rawX: number;
+  lock: SwipeLock;
+  armed: boolean;
+};
 
-function FairPage({ fair, items, createItem, onBack, onOpenProduct, togglePurchased, totals, updateFair, updateItem }: FairPageProps) {
+const SWIPE_START_DISTANCE = 8;
+const SWIPE_DELETE_DISTANCE = 118;
+const SWIPE_REVEAL_DISTANCE = 126;
+
+function getResistedSwipe(distance: number) {
+  return -Math.min(SWIPE_REVEAL_DISTANCE, distance * 0.82);
+}
+
+function FairPage({ deleteItem, fair, items, createItem, onBack, onOpenProduct, togglePurchased, totals, updateFair, updateItem }: FairPageProps) {
   const purchasedItems = items.filter((item) => item.purchased);
   const purchasedTotal = purchasedItems.reduce((sum, item) => sum + item.totalPrice, 0);
   const pendingTotal = items.filter((item) => !item.purchased).reduce((sum, item) => sum + item.totalPrice, 0);
@@ -613,16 +633,6 @@ function FairPage({ fair, items, createItem, onBack, onOpenProduct, togglePurcha
   const [showNewItem, setShowNewItem] = useState(false);
   const [newItem, setNewItem] = useState({ name: "", price: "", quantity: "1" });
   const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    if (!editingBudget) {
-      setBudgetDraft(String(fair.budget).replace(".", ","));
-    }
-
-    if (!editingName) {
-      setNameDraft(fair.name);
-    }
-  }, [editingBudget, editingName, fair.budget, fair.name]);
 
   const saveBudget = async () => {
     setEditingBudget(false);
@@ -690,6 +700,7 @@ function FairPage({ fair, items, createItem, onBack, onOpenProduct, togglePurcha
               type="button"
               onClick={() => {
                 triggerHaptic("selection");
+                setNameDraft(fair.name);
                 setEditingName(true);
               }}
             >
@@ -727,6 +738,7 @@ function FairPage({ fair, items, createItem, onBack, onOpenProduct, togglePurcha
               type="button"
               onClick={() => {
                 triggerHaptic("selection");
+                setBudgetDraft(String(fair.budget).replace(".", ","));
                 setEditingBudget(true);
               }}
             >
@@ -752,6 +764,7 @@ function FairPage({ fair, items, createItem, onBack, onOpenProduct, togglePurcha
         {items.length === 0 ? <p className="empty-list">Ainda sem itens.</p> : null}
         {items.map((item) => (
           <FairTodoRow
+            deleteItem={deleteItem}
             item={item}
             key={item.id}
             onOpenDetail={() => onOpenProduct(item.id)}
@@ -818,31 +831,29 @@ function FairPage({ fair, items, createItem, onBack, onOpenProduct, togglePurcha
 }
 
 type FairTodoRowProps = {
+  deleteItem: (itemId: string) => Promise<void>;
   item: FairItem;
   onOpenDetail: () => void;
   togglePurchased: (itemId: string) => Promise<void>;
   updateItem: UpdateFairItem;
 };
 
-function FairTodoRow({ item, onOpenDetail, togglePurchased, updateItem }: FairTodoRowProps) {
+function FairTodoRow({ deleteItem, item, onOpenDetail, togglePurchased, updateItem }: FairTodoRowProps) {
   const [editing, setEditing] = useState<ItemField | null>(null);
   const [draft, setDraft] = useState({
     name: item.name,
     price: String(item.unitPrice).replace(".", ","),
     quantity: String(item.quantity)
   });
+  const [swipeX, setSwipeX] = useState(0);
+  const [isSwiping, setIsSwiping] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
+  const [swipeArmed, setSwipeArmed] = useState(false);
   const pressTimer = useRef<number | null>(null);
   const longPressFired = useRef(false);
-
-  useEffect(() => {
-    if (!editing) {
-      setDraft({
-        name: item.name,
-        price: String(item.unitPrice).replace(".", ","),
-        quantity: String(item.quantity)
-      });
-    }
-  }, [editing, item.name, item.quantity, item.unitPrice]);
+  const swipe = useRef<SwipeState | null>(null);
+  const suppressClick = useRef(false);
+  const suppressClickTimer = useRef<number | null>(null);
 
   const clearPress = () => {
     if (pressTimer.current) {
@@ -851,7 +862,37 @@ function FairTodoRow({ item, onOpenDetail, togglePurchased, updateItem }: FairTo
     }
   };
 
-  const startPress = (event: PointerEvent<HTMLDivElement>) => {
+  const suppressNextClick = () => {
+    suppressClick.current = true;
+
+    if (suppressClickTimer.current) {
+      window.clearTimeout(suppressClickTimer.current);
+    }
+
+    suppressClickTimer.current = window.setTimeout(() => {
+      suppressClick.current = false;
+      suppressClickTimer.current = null;
+    }, 360);
+  };
+
+  const startPointer = (event: PointerEvent<HTMLDivElement>) => {
+    if ((event.pointerType === "mouse" && event.button !== 0) || editing || isRemoving) {
+      return;
+    }
+
+    if ((event.target as HTMLElement).closest("input")) {
+      return;
+    }
+
+    swipe.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      rawX: 0,
+      lock: null,
+      armed: false
+    };
+
     if ((event.target as HTMLElement).closest(".item-check-button, .item-detail-button, input")) {
       return;
     }
@@ -865,6 +906,147 @@ function FairTodoRow({ item, onOpenDetail, togglePurchased, updateItem }: FairTo
     }, 520);
   };
 
+  const movePointer = (event: PointerEvent<HTMLDivElement>) => {
+    const currentSwipe = swipe.current;
+
+    if (!currentSwipe || currentSwipe.pointerId !== event.pointerId) {
+      return;
+    }
+
+    const deltaX = event.clientX - currentSwipe.startX;
+    const deltaY = event.clientY - currentSwipe.startY;
+    const absX = Math.abs(deltaX);
+    const absY = Math.abs(deltaY);
+
+    if (!currentSwipe.lock) {
+      if (absX < SWIPE_START_DISTANCE && absY < SWIPE_START_DISTANCE) {
+        return;
+      }
+
+      if (absY > absX * 1.15) {
+        currentSwipe.lock = "scroll";
+        clearPress();
+        return;
+      }
+
+      if (deltaX < -SWIPE_START_DISTANCE) {
+        currentSwipe.lock = "swipe";
+        event.currentTarget.setPointerCapture(event.pointerId);
+        clearPress();
+        setIsSwiping(true);
+        suppressNextClick();
+        triggerHaptic("selection");
+      } else {
+        currentSwipe.lock = "scroll";
+        clearPress();
+        return;
+      }
+    }
+
+    if (currentSwipe.lock !== "swipe") {
+      return;
+    }
+
+    event.preventDefault();
+
+    const distance = Math.max(0, -deltaX);
+    const nextSwipeX = getResistedSwipe(distance);
+    const nextArmed = distance >= SWIPE_DELETE_DISTANCE;
+
+    currentSwipe.rawX = distance;
+    setSwipeX(nextSwipeX);
+
+    if (nextArmed !== currentSwipe.armed) {
+      currentSwipe.armed = nextArmed;
+      setSwipeArmed(nextArmed);
+      triggerHaptic(nextArmed ? "medium" : "light");
+    }
+  };
+
+  const resetSwipe = () => {
+    swipe.current = null;
+    clearPress();
+    setIsSwiping(false);
+    setSwipeArmed(false);
+    setSwipeX(0);
+  };
+
+  const deleteFromSwipe = () => {
+    const exitDistance = -Math.min(window.innerWidth || 360, 520);
+
+    clearPress();
+    setIsSwiping(false);
+    setSwipeArmed(true);
+    setIsRemoving(true);
+    setSwipeX(exitDistance);
+    triggerHaptic("error");
+
+    window.setTimeout(() => {
+      void deleteItem(item.id).catch(() => {
+        setIsRemoving(false);
+        setSwipeArmed(false);
+        setSwipeX(0);
+        triggerHaptic("warning");
+      });
+    }, 150);
+  };
+
+  const endPointer = (event: PointerEvent<HTMLDivElement>) => {
+    const currentSwipe = swipe.current;
+
+    if (!currentSwipe || currentSwipe.pointerId !== event.pointerId) {
+      clearPress();
+      return;
+    }
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+
+    swipe.current = null;
+    clearPress();
+
+    if (currentSwipe.lock !== "swipe") {
+      setSwipeX(0);
+      setSwipeArmed(false);
+      return;
+    }
+
+    event.preventDefault();
+    suppressNextClick();
+
+    if (currentSwipe.rawX >= SWIPE_DELETE_DISTANCE) {
+      deleteFromSwipe();
+      return;
+    }
+
+    setIsSwiping(false);
+    setSwipeArmed(false);
+    setSwipeX(0);
+  };
+
+  const cancelPointer = (event: PointerEvent<HTMLDivElement>) => {
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+
+    resetSwipe();
+  };
+
+  const stopSuppressedClick = (event: MouseEvent<HTMLDivElement>) => {
+    if (!suppressClick.current) {
+      return;
+    }
+
+    suppressClick.current = false;
+    if (suppressClickTimer.current) {
+      window.clearTimeout(suppressClickTimer.current);
+      suppressClickTimer.current = null;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+  };
+
   const startEdit = (field: ItemField) => {
     if (longPressFired.current) {
       longPressFired.current = false;
@@ -872,6 +1054,11 @@ function FairTodoRow({ item, onOpenDetail, togglePurchased, updateItem }: FairTo
     }
 
     triggerHaptic("selection");
+    setDraft({
+      name: item.name,
+      price: String(item.unitPrice).replace(".", ","),
+      quantity: String(item.quantity)
+    });
     setEditing(field);
   };
 
@@ -909,83 +1096,104 @@ function FairTodoRow({ item, onOpenDetail, togglePurchased, updateItem }: FairTo
       setEditing(null);
     }
   };
+  const itemSwipeStyle =
+    swipeX !== 0 || isSwiping || isRemoving
+      ? ({ transform: `translate3d(${swipeX}px, 0, 0)` } as CSSProperties)
+      : undefined;
 
   return (
     <div
-      className={item.purchased ? "todo-item purchased" : "todo-item"}
-      onPointerCancel={clearPress}
-      onPointerDown={startPress}
-      onPointerLeave={clearPress}
-      onPointerUp={clearPress}
+      className={swipeArmed ? "todo-swipe-shell armed" : "todo-swipe-shell"}
+      style={{ "--swipe-progress": String(Math.min(Math.abs(swipeX) / SWIPE_REVEAL_DISTANCE, 1)) } as CSSProperties}
     >
-      <button
-        className="item-check-button"
-        type="button"
-        aria-label={item.purchased ? `${item.name} comprado` : `Marcar ${item.name} como comprado`}
-        onClick={() => {
-          triggerHaptic("success");
-          void togglePurchased(item.id);
+      <div className="todo-delete-action" aria-hidden="true">
+        <Trash2 size={18} />
+        <span>Deletar</span>
+      </div>
+
+      <div
+        className={`${item.purchased ? "todo-item purchased" : "todo-item"}${isSwiping ? " swiping" : ""}${isRemoving ? " removing" : ""}`}
+        style={itemSwipeStyle}
+        onClickCapture={stopSuppressedClick}
+        onPointerCancel={cancelPointer}
+        onPointerDown={startPointer}
+        onPointerLeave={() => {
+          if (swipe.current?.lock !== "swipe") {
+            clearPress();
+          }
         }}
+        onPointerMove={movePointer}
+        onPointerUp={endPointer}
       >
-        {item.purchased ? <Check size={15} /> : null}
-      </button>
+        <button
+          className="item-check-button"
+          type="button"
+          aria-label={item.purchased ? `${item.name} comprado` : `Marcar ${item.name} como comprado`}
+          onClick={() => {
+            triggerHaptic("success");
+            void togglePurchased(item.id);
+          }}
+        >
+          {item.purchased ? <Check size={15} /> : null}
+        </button>
 
-      <div className="todo-item-main">
-        {editing === "name" ? (
-          <input
-            autoFocus
-            className="todo-inline-input name"
-            value={draft.name}
-            onBlur={() => commit("name")}
-            onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))}
-            onKeyDown={(event) => handleFieldKey(event, "name")}
-          />
-        ) : (
-          <button className="todo-name-button" type="button" onClick={() => startEdit("name")}>
-            {item.name}
-          </button>
-        )}
+        <div className="todo-item-main">
+          {editing === "name" ? (
+            <input
+              autoFocus
+              className="todo-inline-input name"
+              value={draft.name}
+              onBlur={() => commit("name")}
+              onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))}
+              onKeyDown={(event) => handleFieldKey(event, "name")}
+            />
+          ) : (
+            <button className="todo-name-button" type="button" onClick={() => startEdit("name")}>
+              {item.name}
+            </button>
+          )}
+        </div>
+
+        <div className="todo-money">
+          {editing === "price" ? (
+            <input
+              autoFocus
+              className="todo-inline-input money"
+              inputMode="decimal"
+              value={draft.price}
+              onBlur={() => commit("price")}
+              onChange={(event) => setDraft((current) => ({ ...current, price: event.target.value }))}
+              onKeyDown={(event) => handleFieldKey(event, "price")}
+            />
+          ) : (
+            <button className="todo-price-button" type="button" onClick={() => startEdit("price")}>
+              {formatCurrency(item.unitPrice)}
+            </button>
+          )}
+        </div>
+
+        <div className="todo-quantity">
+          {editing === "quantity" ? (
+            <input
+              autoFocus
+              className="todo-inline-input qty"
+              inputMode="numeric"
+              value={draft.quantity}
+              onBlur={() => commit("quantity")}
+              onChange={(event) => setDraft((current) => ({ ...current, quantity: event.target.value }))}
+              onKeyDown={(event) => handleFieldKey(event, "quantity")}
+            />
+          ) : (
+            <button className="todo-qty-button" type="button" onClick={() => startEdit("quantity")}>
+              x{item.quantity}
+            </button>
+          )}
+        </div>
+
+        <button className="item-detail-button" type="button" aria-label={`Detalhes de ${item.name}`} onClick={onOpenDetail}>
+          <ChevronRight size={17} />
+        </button>
       </div>
-
-      <div className="todo-money">
-        {editing === "price" ? (
-          <input
-            autoFocus
-            className="todo-inline-input money"
-            inputMode="decimal"
-            value={draft.price}
-            onBlur={() => commit("price")}
-            onChange={(event) => setDraft((current) => ({ ...current, price: event.target.value }))}
-            onKeyDown={(event) => handleFieldKey(event, "price")}
-          />
-        ) : (
-          <button className="todo-price-button" type="button" onClick={() => startEdit("price")}>
-            {formatCurrency(item.unitPrice)}
-          </button>
-        )}
-      </div>
-
-      <div className="todo-quantity">
-        {editing === "quantity" ? (
-          <input
-            autoFocus
-            className="todo-inline-input qty"
-            inputMode="numeric"
-            value={draft.quantity}
-            onBlur={() => commit("quantity")}
-            onChange={(event) => setDraft((current) => ({ ...current, quantity: event.target.value }))}
-            onKeyDown={(event) => handleFieldKey(event, "quantity")}
-          />
-        ) : (
-          <button className="todo-qty-button" type="button" onClick={() => startEdit("quantity")}>
-            x{item.quantity}
-          </button>
-        )}
-      </div>
-
-      <button className="item-detail-button" type="button" aria-label={`Detalhes de ${item.name}`} onClick={onOpenDetail}>
-        <ChevronRight size={17} />
-      </button>
     </div>
   );
 }
@@ -998,16 +1206,6 @@ function ProductPage({ deleteItem, fair, item, onBack, togglePurchased, updateIt
     category: item.category ?? "",
     notes: item.notes ?? ""
   });
-
-  useEffect(() => {
-    setDraft({
-      name: item.name,
-      price: String(item.unitPrice).replace(".", ","),
-      quantity: String(item.quantity),
-      category: item.category ?? "",
-      notes: item.notes ?? ""
-    });
-  }, [item.category, item.name, item.notes, item.quantity, item.unitPrice]);
 
   const saveProduct = async () => {
     await updateItem(item.id, {
@@ -1155,19 +1353,14 @@ function ProfilePage({ user, fairsCount, itemsCount, logout, theme, toggleTheme,
   const [editError, setEditError] = useState("");
   const [savingField, setSavingField] = useState<ProfileField | null>(null);
 
-  useEffect(() => {
-    if (!editingField) {
-      setDraft({
-        name: fullName,
-        email: user?.email ?? "",
-        birthDate
-      });
-    }
-  }, [birthDate, editingField, fullName, user?.email]);
-
   const startEdit = (field: ProfileField) => {
     triggerHaptic("selection");
     setEditError("");
+    setDraft({
+      name: fullName,
+      email: user?.email ?? "",
+      birthDate
+    });
     setEditingField(field);
   };
 
