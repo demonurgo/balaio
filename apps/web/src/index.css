@@ -1021,10 +1021,11 @@ h2 {
 }
 
 .category-ring-center strong {
+  font-family: var(--font-brand);
   font-size: 42px;
   font-weight: 900;
   letter-spacing: 0;
-  line-height: 0.95;
+  line-height: 0.86;
 }
 
 .category-ring-center span {

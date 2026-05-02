@@ -970,7 +970,7 @@ function CategoryRingChart({ categories, total }: { categories: CategoryBreakdow
         <div className="category-ring-center">
           <strong>{leading ? `${leading.percent}%` : "0%"}</strong>
           <span>{leading ? leading.label : "adicione categorias"}</span>
-          <small>{formatCurrency(total)}</small>
+          <small>{formatCurrency(leading?.value ?? total)}</small>
         </div>
       </div>
 
