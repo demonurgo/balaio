@@ -317,6 +317,19 @@ label[for^="web-haptics-"] input[switch] {
   background: var(--color-elevated-hover);
 }
 
+.fair-menu-popover button.active {
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+}
+
+.fair-menu-popover button.danger {
+  color: var(--color-danger);
+}
+
+.fair-actions-popover {
+  min-width: 188px;
+}
+
 .eyebrow,
 .metric small,
 .fair-row small {
@@ -997,8 +1010,75 @@ h2 {
   font-weight: 700;
 }
 
-.fair-menu-button {
+.fair-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin-left: auto;
+}
+
+.fair-menu-button {
+  margin-left: 0;
+}
+
+.fair-status-wrap {
+  position: relative;
+}
+
+.fair-realtime-button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+}
+
+.fair-realtime-button span {
+  width: 10px;
+  height: 10px;
+  border-radius: inherit;
+  background: var(--color-success);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-success) 18%, transparent), 0 0 18px color-mix(in srgb, var(--color-success) 82%, transparent);
+  animation: realtimePulse 1.9s ease-in-out infinite;
+}
+
+.fair-realtime-button.unstable span {
+  background: var(--color-warning);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-warning) 20%, transparent), 0 0 18px color-mix(in srgb, var(--color-warning) 82%, transparent);
+}
+
+.fair-realtime-button.offline span {
+  background: var(--color-danger);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-danger) 18%, transparent), 0 0 18px color-mix(in srgb, var(--color-danger) 82%, transparent);
+}
+
+.fair-status-tooltip {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: -42px;
+  z-index: 6;
+  display: grid;
+  gap: 4px;
+  min-width: 174px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  color: var(--color-text);
+  background: var(--color-elevated);
+  box-shadow: var(--shadow-soft);
+}
+
+.fair-status-tooltip strong {
+  font-size: 12px;
+}
+
+.fair-status-tooltip span {
+  color: var(--color-muted);
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .fair-title-button {
@@ -1774,6 +1854,17 @@ h2 {
 
   100% {
     transform: translateX(-1px);
+  }
+}
+
+@keyframes realtimePulse {
+  0%,
+  100% {
+    transform: scale(0.92);
+  }
+
+  50% {
+    transform: scale(1.08);
   }
 }
 
@@ -2674,7 +2765,7 @@ h2 {
     bottom: 20px;
     z-index: 20;
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     min-height: 66px;
     padding: 8px 10px;
     border: 1px solid color-mix(in srgb, var(--color-border) 76%, transparent);
@@ -2684,7 +2775,7 @@ h2 {
       0 20px 44px rgba(20, 38, 31, 0.18),
       inset 0 1px 0 rgba(255, 255, 255, 0.6);
     transform: translate3d(0, 0, 0);
-    transition: transform 380ms cubic-bezier(0.16, 1, 0.3, 1), opacity 260ms ease;
+    transition: transform 760ms cubic-bezier(0.16, 1, 0.3, 1), opacity 520ms ease;
     will-change: transform, opacity;
   }
 

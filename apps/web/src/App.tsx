@@ -25,7 +25,9 @@ import {
   Share2,
   ShieldCheck,
   ShoppingBasket,
+  SprayCan,
   StickyNote,
+  Store,
   Sun,
   Tag,
   Trash2,
@@ -56,6 +58,7 @@ const emptyFair = {
 };
 
 type View = "feiras" | "minhas-feiras" | "feira" | "produto" | "calendario" | "orcamento" | "perfil";
+type RealtimeStatus = "online" | "unstable" | "offline";
 type RouteState = {
   view: View;
   fairId?: string;
@@ -149,7 +152,14 @@ function App() {
     socket.connect();
     socket.emit("fair:join", { fairId: selectedFairId });
 
+    setRealtimeStatus(socket.connected ? "online" : "unstable");
     const refresh = () => void loadFairs();
+    const markOnline = () => setRealtimeStatus("online");
+    const markUnstable = () => setRealtimeStatus("unstable");
+    const markOffline = () => setRealtimeStatus("offline");
+    socket.on("connect", markOnline);
+    socket.on("connect_error", markUnstable);
+    socket.on("disconnect", markOffline);
     socket.on("fair:updated", refresh);
     socket.on("fair:deleted", refresh);
     socket.on("item:created", refresh);
@@ -158,6 +168,9 @@ function App() {
 
     return () => {
       socket.emit("fair:leave", { fairId: selectedFairId });
+      socket.off("connect", markOnline);
+      socket.off("connect_error", markUnstable);
+      socket.off("disconnect", markOffline);
       socket.off("fair:updated", refresh);
       socket.off("fair:deleted", refresh);
       socket.off("item:created", refresh);
@@ -179,6 +192,7 @@ function App() {
   const mobileBrandRef = useRef<HTMLImageElement>(null);
   const [fairMenuOpen, setFairMenuOpen] = useState(false);
   const [bottomTabsHidden, setBottomTabsHidden] = useState(false);
+  const [realtimeStatus, setRealtimeStatus] = useState<RealtimeStatus>(socket.connected ? "online" : "unstable");
 
   const handleLogoClick = () => {
     triggerHapticDuration(590, 0.65);
@@ -357,6 +371,7 @@ function App() {
           />
         ) : view === "feira" ? (
           <FairPage
+            deleteFair={deleteFair}
             deleteItem={deleteItem}
             fair={selectedFair}
             items={items}
@@ -369,6 +384,7 @@ function App() {
               triggerHaptic("selection");
               window.location.hash = `produto/${selectedFair.id}/${itemId}`;
             }}
+            realtimeStatus={realtimeStatus}
             togglePurchased={togglePurchased}
             totals={totals}
             updateFair={updateFair}
@@ -644,14 +660,6 @@ function App() {
           <ShoppingBasket size={22} />
           <span>Feiras</span>
         </a>
-        <a
-          className={view === "calendario" ? "bottom-tab active" : "bottom-tab"}
-          href="#calendario"
-          onClick={() => triggerHaptic("selection")}
-        >
-          <CalendarDays size={22} />
-          <span>Calendario</span>
-        </a>
         <a className={view === "orcamento" ? "bottom-tab active" : "bottom-tab"} href="#orcamento" onClick={() => triggerHaptic("selection")}>
           <Wallet size={22} />
           <span>Orcamento</span>
@@ -711,12 +719,14 @@ type CreateFairItem = (fairId: string, input: { name: string; quantity?: number;
 type UpdateFair = (fairId: string, input: Partial<Pick<Fair, "name" | "month" | "year" | "budget">>) => Promise<void>;
 
 type FairPageProps = {
+  deleteFair: (fairId: string) => Promise<void>;
   deleteItem: (itemId: string) => Promise<void>;
   fair: Fair;
   items: FairItem[];
   createItem: CreateFairItem;
   onBack: () => void;
   onOpenProduct: (itemId: string) => void;
+  realtimeStatus: RealtimeStatus;
   togglePurchased: (itemId: string) => Promise<void>;
   totals: { total: number; remaining: number; percent: number };
   updateFair: UpdateFair;
@@ -733,6 +743,7 @@ type ProductPageProps = {
 };
 
 type ItemField = "name" | "price" | "quantity";
+type ItemSortMode = "manual" | "category" | "priceAsc" | "priceDesc";
 type SwipeLock = "scroll" | "swipe" | null;
 type SwipeState = {
   pointerId: number;
@@ -747,17 +758,40 @@ type SwipeState = {
 const SWIPE_START_DISTANCE = 8;
 const SWIPE_DELETE_DISTANCE = 118;
 const SWIPE_REVEAL_DISTANCE = 126;
-const CATEGORY_COLORS = ["#f6d957", "#a7bc72", "#eda8cf", "#adc8ed", "#f0a9ce", "#f4c76e", "#9fcbb1", "#c9b8ef"];
-const CATEGORY_ICON_MAP = [
-  { icon: Salad, keywords: ["salada", "saladas"] },
-  { icon: Carrot, keywords: ["legume", "legumes", "verdura", "verduras", "hortifruti"] },
-  { icon: Beef, keywords: ["carne", "carnes", "acougue", "açougue", "frango", "bovina", "suina", "suína"] },
-  { icon: CupSoda, keywords: ["bebida", "bebidas", "suco", "refrigerante", "agua", "água"] },
-  { icon: Sandwich, keywords: ["lanche", "lanches", "padaria", "pao", "pão", "sanduiche", "sanduíche"] },
-  { icon: Milk, keywords: ["leite", "laticinio", "laticínios", "laticinios", "queijo", "iogurte"] },
-  { icon: Fish, keywords: ["peixe", "peixes", "frutos do mar", "camarao", "camarão"] },
-  { icon: Candy, keywords: ["doce", "doces", "sobremesa", "chocolate", "biscoito"] },
-  { icon: Apple, keywords: ["fruta", "frutas"] }
+const CATEGORY_COLORS = ["#f6d957", "#a7bc72", "#eda8cf", "#adc8ed", "#f0a9ce", "#f4c76e", "#9fcbb1", "#c9b8ef", "#8fd3c7", "#d9c48a"];
+const CATEGORY_META = [
+  { icon: Salad, color: "#9fcbb1", keywords: ["salada", "saladas"] },
+  { icon: Carrot, color: "#eda8cf", keywords: ["legume", "legumes", "verdura", "verduras", "hortifruti"] },
+  { icon: Beef, color: "#f4c76e", keywords: ["carne", "carnes", "acougue", "açougue", "frango", "bovina", "suina", "suína"] },
+  { icon: CupSoda, color: "#adc8ed", keywords: ["bebida", "bebidas", "suco", "refrigerante", "agua", "água"] },
+  { icon: Sandwich, color: "#f6d957", keywords: ["lanche", "lanches", "padaria", "pao", "pão", "sanduiche", "sanduíche"] },
+  { icon: Milk, color: "#b8d2f0", keywords: ["leite", "laticinio", "laticínios", "laticinios", "queijo", "iogurte"] },
+  { icon: Fish, color: "#a7bc72", keywords: ["peixe", "peixes", "frutos do mar", "camarao", "camarão"] },
+  { icon: Candy, color: "#f0a9ce", keywords: ["doce", "doces", "sobremesa", "chocolate", "biscoito"] },
+  { icon: Apple, color: "#c9b8ef", keywords: ["fruta", "frutas"] },
+  { icon: Store, color: "#f4c76e", keywords: ["mercearia", "mercado", "supermercado", "mantimento", "mantimentos", "grao", "graos", "grão", "grãos"] },
+  {
+    icon: SprayCan,
+    color: "#8fd3c7",
+    keywords: [
+      "limpeza",
+      "higiene",
+      "lavanderia",
+      "detergente",
+      "desinfetante",
+      "sabao",
+      "amaciante",
+      "agua sanitaria",
+      "cloro",
+      "esponja",
+      "vassoura",
+      "rodo",
+      "pano",
+      "alcool",
+      "multiuso"
+    ]
+  },
+  { icon: Tag, color: "#d9c48a", keywords: ["outros", "sem categoria", "diversos"] }
 ];
 
 function getResistedSwipe(distance: number) {
@@ -1076,14 +1110,25 @@ function getCategoryLabel(item: FairItem) {
   return category || "Sem categoria";
 }
 
-function getCategoryIcon(label: string) {
-  const normalized = label
+function normalizeCategoryLabel(label: string) {
+  return label
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
+}
 
-  return CATEGORY_ICON_MAP.find((entry) => entry.keywords.some((keyword) => normalized.includes(keyword.normalize("NFD").replace(/[\u0300-\u036f]/g, ""))))?.icon ??
-    ShoppingBasket;
+function getCategoryMeta(label: string) {
+  const normalized = normalizeCategoryLabel(label);
+
+  return CATEGORY_META.find((entry) => entry.keywords.some((keyword) => normalized.includes(normalizeCategoryLabel(keyword))));
+}
+
+function getCategoryIcon(label: string) {
+  return getCategoryMeta(label)?.icon ?? ShoppingBasket;
+}
+
+function getCategoryColor(label: string, index: number) {
+  return getCategoryMeta(label)?.color ?? CATEGORY_COLORS[index % CATEGORY_COLORS.length];
 }
 
 function getCategoryBreakdown(items: FairItem[]) {
@@ -1114,15 +1159,15 @@ function getCategoryBreakdown(items: FairItem[]) {
     : visible;
   const categories = displayCategories.map((item, index) => ({
       ...item,
-      color: CATEGORY_COLORS[index % CATEGORY_COLORS.length],
-      Icon: item.label === "Outros" ? ShoppingBasket : getCategoryIcon(item.label),
+      color: getCategoryColor(item.label, index),
+      Icon: getCategoryIcon(item.label),
       percent: total > 0 ? Math.round((item.value / total) * 100) : 0
     }));
 
   return { categories, total };
 }
 
-function FairPage({ deleteItem, fair, items, createItem, onBack, onOpenProduct, togglePurchased, totals, updateFair, updateItem }: FairPageProps) {
+function FairPage({ deleteFair, deleteItem, fair, items, createItem, onBack, onOpenProduct, realtimeStatus, togglePurchased, totals, updateFair, updateItem }: FairPageProps) {
   const purchasedItems = items.filter((item) => item.purchased);
   const purchasedTotal = purchasedItems.reduce((sum, item) => sum + item.totalPrice, 0);
   const pendingTotal = items.filter((item) => !item.purchased).reduce((sum, item) => sum + item.totalPrice, 0);
@@ -1131,6 +1176,26 @@ function FairPage({ deleteItem, fair, items, createItem, onBack, onOpenProduct, 
     () => new Map(categoryBreakdown.categories.map((category) => [category.label.toLowerCase(), category.color])),
     [categoryBreakdown.categories]
   );
+  const [itemSortMode, setItemSortMode] = useState<ItemSortMode>("manual");
+  const sortedItems = useMemo(() => {
+    const order = new Map(items.map((item, index) => [item.id, index]));
+    const nextItems = [...items];
+    const getOrder = (item: FairItem) => order.get(item.id) ?? 0;
+
+    if (itemSortMode === "category") {
+      return nextItems.sort((a, b) => getCategoryLabel(a).localeCompare(getCategoryLabel(b), "pt-BR") || getOrder(a) - getOrder(b));
+    }
+
+    if (itemSortMode === "priceAsc") {
+      return nextItems.sort((a, b) => a.totalPrice - b.totalPrice || getOrder(a) - getOrder(b));
+    }
+
+    if (itemSortMode === "priceDesc") {
+      return nextItems.sort((a, b) => b.totalPrice - a.totalPrice || getOrder(a) - getOrder(b));
+    }
+
+    return nextItems;
+  }, [itemSortMode, items]);
   const [editingBudget, setEditingBudget] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [budgetDraft, setBudgetDraft] = useState(String(fair.budget).replace(".", ","));
@@ -1139,6 +1204,8 @@ function FairPage({ deleteItem, fair, items, createItem, onBack, onOpenProduct, 
   const [newItem, setNewItem] = useState({ name: "", price: "", quantity: "1" });
   const [saving, setSaving] = useState(false);
   const [backPressed, setBackPressed] = useState(false);
+  const [fairActionsOpen, setFairActionsOpen] = useState(false);
+  const [statusOpen, setStatusOpen] = useState(false);
 
   const handleBack = () => {
     if (backPressed) {
@@ -1189,6 +1256,32 @@ function FairPage({ deleteItem, fair, items, createItem, onBack, onOpenProduct, 
     triggerHaptic("success");
   };
 
+  const changeSortMode = (mode: ItemSortMode) => {
+    triggerHaptic("selection");
+    setItemSortMode(mode);
+    setFairActionsOpen(false);
+  };
+
+  const deleteCurrentFair = async () => {
+    setFairActionsOpen(false);
+
+    if (!window.confirm(`Excluir a feira ${fair.label}?`)) {
+      triggerHaptic("warning");
+      return;
+    }
+
+    triggerHaptic("error");
+    await deleteFair(fair.id);
+    onBack();
+  };
+
+  const realtimeLabel =
+    realtimeStatus === "online"
+      ? "Tempo real ativo"
+      : realtimeStatus === "unstable"
+        ? "Conexao instavel"
+        : "Tempo real offline";
+
   return (
     <section className="fair-screen" aria-label={`Feira ${fair.label}`}>
       <header className="fair-screen-header">
@@ -1223,11 +1316,63 @@ function FairPage({ deleteItem, fair, items, createItem, onBack, onOpenProduct, 
               <h1>{fair.label}</h1>
             </button>
           )}
-          <p>{fair.memberCount} pessoas editando</p>
         </div>
-        <button className="icon-button fair-menu-button" type="button" aria-label="Mais opcoes" onClick={() => triggerHaptic("light")}>
-          <MoreHorizontal size={20} />
-        </button>
+        <div className="fair-header-actions">
+          <div className="fair-status-wrap">
+            <button
+              className={`fair-realtime-button ${realtimeStatus}`}
+              type="button"
+              aria-label={realtimeLabel}
+              onClick={() => {
+                triggerHaptic("selection");
+                setStatusOpen((current) => !current);
+                setFairActionsOpen(false);
+              }}
+            >
+              <span />
+            </button>
+            {statusOpen ? (
+              <div className="fair-status-tooltip" role="status">
+                <strong>{realtimeLabel}</strong>
+                <span>{fair.memberCount} pessoas nesta feira</span>
+              </div>
+            ) : null}
+          </div>
+          <div className="fair-menu">
+            <button
+              className="icon-button fair-menu-button"
+              type="button"
+              aria-expanded={fairActionsOpen}
+              aria-label="Mais opcoes"
+              onClick={() => {
+                triggerHaptic("light");
+                setFairActionsOpen((current) => !current);
+                setStatusOpen(false);
+              }}
+            >
+              <MoreHorizontal size={20} />
+            </button>
+            {fairActionsOpen ? (
+              <div className="fair-menu-popover fair-actions-popover">
+                <button className={itemSortMode === "manual" ? "active" : ""} type="button" onClick={() => changeSortMode("manual")}>
+                  Ordem original
+                </button>
+                <button className={itemSortMode === "category" ? "active" : ""} type="button" onClick={() => changeSortMode("category")}>
+                  Ordenar por categoria
+                </button>
+                <button className={itemSortMode === "priceAsc" ? "active" : ""} type="button" onClick={() => changeSortMode("priceAsc")}>
+                  Menor preco
+                </button>
+                <button className={itemSortMode === "priceDesc" ? "active" : ""} type="button" onClick={() => changeSortMode("priceDesc")}>
+                  Maior preco
+                </button>
+                <button className="danger" type="button" onClick={() => void deleteCurrentFair()}>
+                  Excluir feira
+                </button>
+              </div>
+            ) : null}
+          </div>
+        </div>
       </header>
 
       <div className="fair-total-line" aria-label="Resumo da feira">
@@ -1277,21 +1422,6 @@ function FairPage({ deleteItem, fair, items, createItem, onBack, onOpenProduct, 
       </div>
 
       <CategoryRingChart categories={categoryBreakdown.categories} total={categoryBreakdown.total} />
-
-      <div className="todo-list" aria-label="Itens da feira">
-        {items.length === 0 ? <p className="empty-list">Ainda sem itens.</p> : null}
-        {items.map((item) => (
-          <FairTodoRow
-            categoryColor={categoryColorByLabel.get(getCategoryLabel(item).toLowerCase()) ?? categoryColorByLabel.get("outros") ?? CATEGORY_COLORS[0]}
-            deleteItem={deleteItem}
-            item={item}
-            key={item.id}
-            onOpenDetail={() => onOpenProduct(item.id)}
-            togglePurchased={togglePurchased}
-            updateItem={updateItem}
-          />
-        ))}
-      </div>
 
       {showNewItem ? (
         <form
@@ -1345,6 +1475,21 @@ function FairPage({ deleteItem, fair, items, createItem, onBack, onOpenProduct, 
         <Plus size={18} />
         Adicionar item
       </button>
+
+      <div className="todo-list" aria-label="Itens da feira">
+        {items.length === 0 ? <p className="empty-list">Ainda sem itens.</p> : null}
+        {sortedItems.map((item) => (
+          <FairTodoRow
+            categoryColor={categoryColorByLabel.get(getCategoryLabel(item).toLowerCase()) ?? categoryColorByLabel.get("outros") ?? CATEGORY_COLORS[0]}
+            deleteItem={deleteItem}
+            item={item}
+            key={item.id}
+            onOpenDetail={() => onOpenProduct(item.id)}
+            togglePurchased={togglePurchased}
+            updateItem={updateItem}
+          />
+        ))}
+      </div>
     </section>
   );
 }
