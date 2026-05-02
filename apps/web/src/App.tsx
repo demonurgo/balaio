@@ -1371,8 +1371,7 @@ function CategoryRingChart({ categories, total }: { categories: CategoryBreakdow
     const dash = getDash(category);
     const offset = categories.slice(0, index).reduce((sum, current) => sum + getDash(current) + gap, 0);
     const sweep = (dash / circumference) * 360;
-    const endInset = Math.min(12, sweep * 0.35);
-    const angle = -90 + (offset / circumference) * 360 + sweep - endInset;
+    const angle = -90 + (offset / circumference) * 360 + sweep * 0.86;
     const iconRadius = 76;
 
     return {
