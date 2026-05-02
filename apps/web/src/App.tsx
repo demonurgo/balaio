@@ -178,6 +178,7 @@ function App() {
   const desktopBrandRef = useRef<HTMLImageElement>(null);
   const mobileBrandRef = useRef<HTMLImageElement>(null);
   const [fairMenuOpen, setFairMenuOpen] = useState(false);
+  const [bottomTabsHidden, setBottomTabsHidden] = useState(false);
 
   const handleLogoClick = () => {
     triggerHapticDuration(590, 0.65);
@@ -207,6 +208,43 @@ function App() {
     });
     window.location.hash = `feira/${fair.id}`;
   };
+
+  useEffect(() => {
+    let previousScrollY = window.scrollY;
+    let ticking = false;
+
+    const syncBottomTabs = () => {
+      const currentScrollY = window.scrollY;
+      const delta = currentScrollY - previousScrollY;
+
+      if (currentScrollY < 24) {
+        setBottomTabsHidden(false);
+      } else if (delta > 8) {
+        setBottomTabsHidden(true);
+      } else if (delta < -8) {
+        setBottomTabsHidden(false);
+      }
+
+      previousScrollY = currentScrollY;
+      ticking = false;
+    };
+
+    const onScroll = () => {
+      if (ticking) {
+        return;
+      }
+
+      ticking = true;
+      window.requestAnimationFrame(syncBottomTabs);
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    setBottomTabsHidden(false);
+  }, [view]);
 
   const openLatestFair = () => {
     triggerHaptic("selection");
@@ -590,7 +628,7 @@ function App() {
         )}
       </section>
 
-      <nav className="bottom-tabs" aria-label="Navegacao principal">
+      <nav className={bottomTabsHidden ? "bottom-tabs hidden" : "bottom-tabs"} aria-label="Navegacao principal">
         <a className={view === "feiras" ? "bottom-tab active" : "bottom-tab"} href="#feiras" onClick={() => triggerHaptic("selection")}>
           <LayoutList size={22} />
           <span>Dashboard</span>
