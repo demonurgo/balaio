@@ -1510,7 +1510,7 @@ function CategoryRingChart({ categories, total }: { categories: CategoryBreakdow
     const dash = getDash(category);
     const offset = categories.slice(0, index).reduce((sum, current) => sum + getDash(current) + gap, 0);
     const sweep = (dash / circumference) * 360;
-    const angle = -90 + (offset / circumference) * 360 + sweep * 0.1;
+    const angle = -90 + (offset / circumference) * 360 + sweep * 0.08;
     const iconRadius = 76;
 
     return {
@@ -1554,7 +1554,7 @@ function CategoryRingChart({ categories, total }: { categories: CategoryBreakdow
                   strokeDasharray={`${dash} ${circumference - dash}`}
                   strokeDashoffset={strokeDashoffset}
                 />
-                <foreignObject height="30" width="30" x={iconX - 15} y={iconY - 15}>
+                <foreignObject height="26" width="26" x={iconX - 13} y={iconY - 13}>
                   <span className="category-ring-icon" style={{ backgroundColor: category.color }}>
                     <Icon size={14} />
                   </span>
