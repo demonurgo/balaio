@@ -917,16 +917,28 @@ type CategoryBreakdownItem = ReturnType<typeof getCategoryBreakdown>["categories
 
 function CategoryRingChart({ categories, total }: { categories: CategoryBreakdownItem[]; total: number }) {
   const leading = categories[0];
+  const [activeCategory, setActiveCategory] = useState<CategoryBreakdownItem | null>(null);
   const radius = 76;
   const circumference = 2 * Math.PI * radius;
   const gap = categories.length > 1 ? 34 : 0;
   const available = circumference - gap * categories.length;
   const getDash = (category: CategoryBreakdownItem) => (category.percent / 100) * available;
-  const segments = categories.map((category, index) => ({
-    category,
-    dash: getDash(category),
-    offset: categories.slice(0, index).reduce((sum, current) => sum + getDash(current) + gap, 0)
-  }));
+  const segments = categories.map((category, index) => {
+    const dash = getDash(category);
+    const offset = categories.slice(0, index).reduce((sum, current) => sum + getDash(current) + gap, 0);
+    const sweep = (dash / circumference) * 360;
+    const angle = -90 + (offset / circumference) * 360 + sweep / 2;
+    const iconRadius = 76;
+
+    return {
+      category,
+      dash,
+      offset,
+      iconX: 110 + Math.cos((angle * Math.PI) / 180) * iconRadius,
+      iconY: 110 + Math.sin((angle * Math.PI) / 180) * iconRadius
+    };
+  });
+  const activeSegment = segments.find(({ category }) => category.label === activeCategory?.label);
 
   return (
     <section className="category-ring-card" aria-label="Distribuicao por categoria">
@@ -937,17 +949,19 @@ function CategoryRingChart({ categories, total }: { categories: CategoryBreakdow
 
       <div className="category-ring-visual">
         <svg className="category-ring-svg" viewBox="0 0 220 220" role="img" aria-label="Grafico de categorias">
-          {segments.map(({ category, dash, offset }) => {
+          {segments.map(({ category, dash, offset, iconX, iconY }) => {
             const strokeDashoffset = -offset;
-            const sweep = (dash / circumference) * 360;
-            const angle = -90 + (offset / circumference) * 360 + sweep / 2;
-            const iconRadius = 76;
-            const iconX = 110 + Math.cos((angle * Math.PI) / 180) * iconRadius;
-            const iconY = 110 + Math.sin((angle * Math.PI) / 180) * iconRadius;
             const Icon = category.Icon;
 
             return (
-              <g key={category.label}>
+              <g
+                className={activeCategory?.label === category.label ? "category-ring-hit active" : "category-ring-hit"}
+                key={category.label}
+                onClick={() => {
+                  triggerHaptic("selection");
+                  setActiveCategory((current) => (current?.label === category.label ? null : category));
+                }}
+              >
                 <circle
                   className="category-ring-segment"
                   cx="110"
@@ -966,6 +980,21 @@ function CategoryRingChart({ categories, total }: { categories: CategoryBreakdow
             );
           })}
         </svg>
+        {activeCategory && activeSegment ? (
+          <div
+            className="category-ring-tooltip"
+            style={
+              {
+                "--tooltip-x": `${(activeSegment.iconX / 220) * 100}%`,
+                "--tooltip-y": `${(activeSegment.iconY / 220) * 100}%`,
+                "--tooltip-color": activeCategory.color
+              } as CSSProperties
+            }
+          >
+            <strong>{activeCategory.label}</strong>
+            <span>{activeCategory.percent}%</span>
+          </div>
+        ) : null}
 
         <div className="category-ring-center">
           <strong>{leading ? `${leading.percent}%` : "0%"}</strong>
@@ -974,17 +1003,6 @@ function CategoryRingChart({ categories, total }: { categories: CategoryBreakdow
         </div>
       </div>
 
-      {categories.length ? (
-        <div className="category-ring-legend">
-          {categories.slice(0, 4).map((category) => (
-            <span key={category.label}>
-              <i style={{ backgroundColor: category.color }} />
-              {category.label}
-              <strong>{category.percent}%</strong>
-            </span>
-          ))}
-        </div>
-      ) : null}
     </section>
   );
 }
