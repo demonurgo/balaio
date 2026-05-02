@@ -55,7 +55,7 @@ const emptyFair = {
   memberCount: 0
 };
 
-type View = "feiras" | "feira" | "produto" | "calendario" | "orcamento" | "perfil";
+type View = "feiras" | "minhas-feiras" | "feira" | "produto" | "calendario" | "orcamento" | "perfil";
 type RouteState = {
   view: View;
   fairId?: string;
@@ -77,7 +77,7 @@ function getRouteFromHash(): RouteState {
     return { view: "produto", fairId, itemId };
   }
 
-  if (view === "calendario" || view === "orcamento" || view === "perfil") {
+  if (view === "minhas-feiras" || view === "calendario" || view === "orcamento" || view === "perfil") {
     return { view };
   }
 
@@ -105,6 +105,7 @@ function App() {
   const createFair = useFairStore((state) => state.createFair);
   const updateFair = useFairStore((state) => state.updateFair);
   const createItem = useFairStore((state) => state.createItem);
+  const deleteFair = useFairStore((state) => state.deleteFair);
   const deleteItem = useFairStore((state) => state.deleteItem);
   const selectedFair = fairs.find((fair) => fair.id === selectedFairId) ?? fairs[0] ?? emptyFair;
   const latestFairs = useMemo(() => fairs.slice(0, 3), [fairs]);
@@ -176,6 +177,7 @@ function App() {
 
   const desktopBrandRef = useRef<HTMLImageElement>(null);
   const mobileBrandRef = useRef<HTMLImageElement>(null);
+  const [fairMenuOpen, setFairMenuOpen] = useState(false);
 
   const handleLogoClick = () => {
     triggerHapticDuration(590, 0.65);
@@ -206,6 +208,19 @@ function App() {
     window.location.hash = `feira/${fair.id}`;
   };
 
+  const openLatestFair = () => {
+    triggerHaptic("selection");
+    const latestFair = fairs[0] ?? selectedFair;
+
+    if (latestFair.id === "empty") {
+      window.location.hash = "feiras";
+      return;
+    }
+
+    selectFair(latestFair.id);
+    window.location.hash = `feira/${latestFair.id}`;
+  };
+
   if (authStatus === "loading") {
     return (
       <main className="auth-shell">
@@ -226,7 +241,7 @@ function App() {
         </button>
 
         <nav className="nav-list" aria-label="Principal">
-          <a className={view === "feiras" || view === "feira" || view === "produto" ? "nav-item active" : "nav-item"} href="#feiras" onClick={() => triggerHaptic("selection")}>
+          <a className={view === "feiras" || view === "minhas-feiras" || view === "feira" || view === "produto" ? "nav-item active" : "nav-item"} href="#feiras" onClick={() => triggerHaptic("selection")}>
             <ShoppingBasket size={19} />
             Feiras
           </a>
@@ -276,10 +291,6 @@ function App() {
             >
               {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
             </button>
-            <button className="primary-button add-fair-button" type="button" onClick={() => void handleCreateFair()}>
-              <Plus size={17} />
-              <span>Nova feira</span>
-            </button>
           </header>
         ) : null}
 
@@ -325,6 +336,23 @@ function App() {
             updateFair={updateFair}
             updateItem={updateItem}
           />
+        ) : view === "minhas-feiras" ? (
+          <AllFairsPage
+            deleteFair={deleteFair}
+            fairError={fairError}
+            fairStatus={fairStatus}
+            fairs={fairs}
+            onBack={() => {
+              triggerHaptic("light");
+              window.location.hash = "feiras";
+            }}
+            onOpen={(fairId) => {
+              triggerHaptic("selection");
+              selectFair(fairId);
+              window.location.hash = `feira/${fairId}`;
+            }}
+            selectedFairId={selectedFairId}
+          />
         ) : (
         <div className="workspace">
           <section className="month-panel" id="feiras">
@@ -332,9 +360,43 @@ function App() {
               <div>
                 <h1>Minhas feiras</h1>
               </div>
-              <button className="icon-button" type="button" aria-label="Mais opcoes" onClick={() => triggerHaptic("light")}>
-                <MoreHorizontal size={20} />
-              </button>
+              <div className="fair-menu">
+                <button
+                  className="icon-button"
+                  type="button"
+                  aria-expanded={fairMenuOpen}
+                  aria-label="Mais opcoes"
+                  onClick={() => {
+                    triggerHaptic("light");
+                    setFairMenuOpen((current) => !current);
+                  }}
+                >
+                  <MoreHorizontal size={20} />
+                </button>
+                {fairMenuOpen ? (
+                  <div className="fair-menu-popover">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        triggerHaptic("selection");
+                        setFairMenuOpen(false);
+                        window.location.hash = "minhas-feiras";
+                      }}
+                    >
+                      Ver todas
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFairMenuOpen(false);
+                        void handleCreateFair();
+                      }}
+                    >
+                      Adicionar feira
+                    </button>
+                  </div>
+                ) : null}
+              </div>
             </div>
 
             <div className="fair-list">
@@ -349,29 +411,18 @@ function App() {
                 const progress = fair.budget > 0 ? Math.min(Math.round((fair.total / fair.budget) * 100), 100) : 0;
 
                 return (
-                  <button
-                    className={isActive ? "fair-row active" : "fair-row"}
+                  <DashboardFairRow
+                    deleteFair={deleteFair}
+                    fair={fair}
+                    isActive={isActive}
                     key={fair.id}
-                    type="button"
-                    onClick={() => {
+                    onOpen={() => {
                       triggerHaptic("selection");
                       selectFair(fair.id);
                       window.location.hash = `feira/${fair.id}`;
                     }}
-                  >
-                    <span>
-                      <strong>{fair.label}</strong>
-                      <small>{fair.memberCount} pessoas</small>
-                    </span>
-                    <span className="money-block">
-                      <small>Total</small>
-                      <strong>{formatCurrency(fair.total)}</strong>
-                    </span>
-                    <ChevronRight className="fair-row-arrow" size={24} aria-hidden="true" />
-                    <span className="progress-track" aria-hidden="true">
-                      <span style={{ width: `${progress}%` }} />
-                    </span>
-                  </button>
+                    progress={progress}
+                  />
                 );
               })}
             </div>
@@ -540,7 +591,18 @@ function App() {
       </section>
 
       <nav className="bottom-tabs" aria-label="Navegacao principal">
-        <a className={view === "feiras" || view === "feira" || view === "produto" ? "bottom-tab active" : "bottom-tab"} href="#feiras" onClick={() => triggerHaptic("selection")}>
+        <a className={view === "feiras" ? "bottom-tab active" : "bottom-tab"} href="#feiras" onClick={() => triggerHaptic("selection")}>
+          <LayoutList size={22} />
+          <span>Dashboard</span>
+        </a>
+        <a
+          className={view === "minhas-feiras" || view === "feira" || view === "produto" ? "bottom-tab active" : "bottom-tab"}
+          href={fairs[0] ? `#feira/${fairs[0].id}` : "#feiras"}
+          onClick={(event) => {
+            event.preventDefault();
+            openLatestFair();
+          }}
+        >
           <ShoppingBasket size={22} />
           <span>Feiras</span>
         </a>
@@ -576,6 +638,24 @@ type DashboardChartsProps = {
   fairs: Fair[];
   items: FairItem[];
   selectedFair: Fair;
+};
+
+type DashboardFairRowProps = {
+  deleteFair: (fairId: string) => Promise<void>;
+  fair: Fair;
+  isActive: boolean;
+  onOpen: () => void;
+  progress: number;
+};
+
+type AllFairsPageProps = {
+  deleteFair: (fairId: string) => Promise<void>;
+  fairError: string;
+  fairStatus: "idle" | "loading" | "ready" | "error";
+  fairs: Fair[];
+  onBack: () => void;
+  onOpen: (fairId: string) => void;
+  selectedFairId: string;
 };
 
 type ProfilePageProps = {
@@ -646,6 +726,314 @@ function getResistedSwipe(distance: number) {
   return -Math.min(SWIPE_REVEAL_DISTANCE, distance * 0.82);
 }
 
+function DashboardFairRow({ deleteFair, fair, isActive, onOpen, progress }: DashboardFairRowProps) {
+  const [swipeX, setSwipeX] = useState(0);
+  const [isSwiping, setIsSwiping] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
+  const [swipeArmed, setSwipeArmed] = useState(false);
+  const swipe = useRef<SwipeState | null>(null);
+  const swipeElement = useRef<HTMLDivElement | null>(null);
+  const detachGlobalSwipe = useRef<(() => void) | null>(null);
+  const suppressClick = useRef(false);
+  const suppressClickTimer = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      detachGlobalSwipe.current?.();
+    };
+  }, []);
+
+  const suppressNextClick = () => {
+    suppressClick.current = true;
+
+    if (suppressClickTimer.current) {
+      window.clearTimeout(suppressClickTimer.current);
+    }
+
+    suppressClickTimer.current = window.setTimeout(() => {
+      suppressClick.current = false;
+      suppressClickTimer.current = null;
+    }, 360);
+  };
+
+  function detachSwipeRelease() {
+    detachGlobalSwipe.current?.();
+    detachGlobalSwipe.current = null;
+  }
+
+  function releaseSwipePointer(pointerId: number) {
+    const element = swipeElement.current;
+
+    if (element?.hasPointerCapture(pointerId)) {
+      element.releasePointerCapture(pointerId);
+    }
+
+    swipeElement.current = null;
+  }
+
+  function attachSwipeRelease(element: HTMLDivElement) {
+    detachSwipeRelease();
+    swipeElement.current = element;
+
+    const finish = (event: globalThis.PointerEvent) => {
+      finishSwipe(event.pointerId, event);
+    };
+
+    window.addEventListener("pointerup", finish, { capture: true });
+    window.addEventListener("pointercancel", finish, { capture: true });
+    detachGlobalSwipe.current = () => {
+      window.removeEventListener("pointerup", finish, { capture: true });
+      window.removeEventListener("pointercancel", finish, { capture: true });
+    };
+  }
+
+  const startPointer = (event: PointerEvent<HTMLDivElement>) => {
+    if ((event.pointerType === "mouse" && event.button !== 0) || isRemoving) {
+      return;
+    }
+
+    swipe.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      rawX: 0,
+      visualX: 0,
+      lock: null,
+      armed: false
+    };
+  };
+
+  const movePointer = (event: PointerEvent<HTMLDivElement>) => {
+    const currentSwipe = swipe.current;
+
+    if (!currentSwipe || currentSwipe.pointerId !== event.pointerId) {
+      return;
+    }
+
+    const deltaX = event.clientX - currentSwipe.startX;
+    const deltaY = event.clientY - currentSwipe.startY;
+    const absX = Math.abs(deltaX);
+    const absY = Math.abs(deltaY);
+
+    if (!currentSwipe.lock) {
+      if (absX < SWIPE_START_DISTANCE && absY < SWIPE_START_DISTANCE) {
+        return;
+      }
+
+      if (absY > absX * 1.15) {
+        currentSwipe.lock = "scroll";
+        return;
+      }
+
+      if (deltaX < -SWIPE_START_DISTANCE) {
+        currentSwipe.lock = "swipe";
+        event.currentTarget.setPointerCapture(event.pointerId);
+        attachSwipeRelease(event.currentTarget);
+        setIsSwiping(true);
+        suppressNextClick();
+        triggerHaptic("selection");
+      } else {
+        currentSwipe.lock = "scroll";
+        return;
+      }
+    }
+
+    if (currentSwipe.lock !== "swipe") {
+      return;
+    }
+
+    event.preventDefault();
+
+    const distance = Math.max(0, -deltaX);
+    const nextSwipeX = getResistedSwipe(distance);
+    const nextArmed = distance >= SWIPE_DELETE_DISTANCE;
+
+    currentSwipe.rawX = distance;
+    currentSwipe.visualX = Math.abs(nextSwipeX);
+    setSwipeX(nextSwipeX);
+
+    if (nextArmed !== currentSwipe.armed) {
+      currentSwipe.armed = nextArmed;
+      setSwipeArmed(nextArmed);
+      triggerHaptic(nextArmed ? "medium" : "light");
+    }
+  };
+
+  const resetSwipe = () => {
+    swipe.current = null;
+    detachSwipeRelease();
+    setIsSwiping(false);
+    setSwipeArmed(false);
+    setSwipeX(0);
+  };
+
+  const deleteFromSwipe = () => {
+    if (!window.confirm(`Excluir a feira ${fair.label}?`)) {
+      resetSwipe();
+      triggerHaptic("warning");
+      return;
+    }
+
+    const exitDistance = -Math.min(window.innerWidth || 360, 520);
+
+    swipe.current = null;
+    detachSwipeRelease();
+    setIsSwiping(false);
+    setSwipeArmed(true);
+    setIsRemoving(true);
+    setSwipeX(exitDistance);
+    triggerHaptic("error");
+
+    window.setTimeout(() => {
+      void deleteFair(fair.id).catch(() => {
+        setIsRemoving(false);
+        setSwipeArmed(false);
+        setSwipeX(0);
+        triggerHaptic("warning");
+      });
+    }, 150);
+  };
+
+  const shouldDeleteSwipe = (currentSwipe: SwipeState) => {
+    return currentSwipe.armed || currentSwipe.rawX >= SWIPE_DELETE_DISTANCE || currentSwipe.visualX >= SWIPE_REVEAL_DISTANCE * 0.9;
+  };
+
+  function finishSwipe(pointerId: number, event?: { preventDefault: () => void }) {
+    const currentSwipe = swipe.current;
+
+    if (!currentSwipe || currentSwipe.pointerId !== pointerId) {
+      return;
+    }
+
+    swipe.current = null;
+    releaseSwipePointer(pointerId);
+    detachSwipeRelease();
+
+    if (currentSwipe.lock !== "swipe") {
+      setSwipeX(0);
+      setSwipeArmed(false);
+      return;
+    }
+
+    event?.preventDefault();
+    suppressNextClick();
+
+    if (shouldDeleteSwipe(currentSwipe)) {
+      deleteFromSwipe();
+      return;
+    }
+
+    setIsSwiping(false);
+    setSwipeArmed(false);
+    setSwipeX(0);
+  }
+
+  const cancelPointer = (event: PointerEvent<HTMLDivElement>) => {
+    const currentSwipe = swipe.current;
+
+    if (currentSwipe?.lock === "swipe" && shouldDeleteSwipe(currentSwipe)) {
+      releaseSwipePointer(event.pointerId);
+      deleteFromSwipe();
+      return;
+    }
+
+    resetSwipe();
+  };
+
+  const stopSuppressedClick = (event: MouseEvent<HTMLButtonElement>) => {
+    if (!suppressClick.current) {
+      return;
+    }
+
+    suppressClick.current = false;
+    if (suppressClickTimer.current) {
+      window.clearTimeout(suppressClickTimer.current);
+      suppressClickTimer.current = null;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+  };
+
+  const fairSwipeStyle =
+    swipeX !== 0 || isSwiping || isRemoving
+      ? ({ transform: `translate3d(${swipeX}px, 0, 0)` } as CSSProperties)
+      : undefined;
+
+  return (
+    <div
+      className={swipeArmed ? "fair-swipe-shell armed" : "fair-swipe-shell"}
+      style={{ "--swipe-progress": String(Math.min(Math.abs(swipeX) / SWIPE_REVEAL_DISTANCE, 1)) } as CSSProperties}
+    >
+      <div className="fair-delete-action" aria-hidden="true">
+        <Trash2 size={18} />
+        <span>Deletar</span>
+      </div>
+      <div
+        onPointerCancel={cancelPointer}
+        onPointerDown={startPointer}
+        onPointerMove={movePointer}
+        onPointerUp={(event) => finishSwipe(event.pointerId, event)}
+      >
+        <button
+          className={`${isActive ? "fair-row active" : "fair-row"}${isSwiping ? " swiping" : ""}${isRemoving ? " removing" : ""}`}
+          style={fairSwipeStyle}
+          type="button"
+          onClick={onOpen}
+          onClickCapture={stopSuppressedClick}
+        >
+          <span>
+            <strong>{fair.label}</strong>
+            <small>{fair.memberCount} pessoas</small>
+          </span>
+          <span className="money-block">
+            <small>Total</small>
+            <strong>{formatCurrency(fair.total)}</strong>
+          </span>
+          <ChevronRight className="fair-row-arrow" size={24} aria-hidden="true" />
+          <span className="progress-track" aria-hidden="true">
+            <span style={{ width: `${progress}%` }} />
+          </span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function AllFairsPage({ deleteFair, fairError, fairStatus, fairs, onBack, onOpen, selectedFairId }: AllFairsPageProps) {
+  return (
+    <section className="all-fairs-page" aria-label="Minhas feiras">
+      <header className="fair-screen-header">
+        <button className="icon-button screen-back-button" type="button" aria-label="Voltar" onClick={onBack}>
+          <ArrowLeft size={19} />
+        </button>
+        <div>
+          <h1>Minhas feiras</h1>
+          <p>{fairs.length} feiras</p>
+        </div>
+      </header>
+
+      <div className="fair-list">
+        {fairStatus === "loading" ? <p className="inline-state">Carregando feiras...</p> : null}
+        {fairStatus === "error" ? <p className="inline-state error">{fairError}</p> : null}
+        {fairs.map((fair) => {
+          const progress = fair.budget > 0 ? Math.min(Math.round((fair.total / fair.budget) * 100), 100) : 0;
+
+          return (
+            <DashboardFairRow
+              deleteFair={deleteFair}
+              fair={fair}
+              isActive={fair.id === selectedFairId}
+              key={fair.id}
+              onOpen={() => onOpen(fair.id)}
+              progress={progress}
+            />
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 function getCategoryLabel(item: FairItem) {
   const category = item.category?.trim();
   return category || "Sem categoria";
@@ -709,6 +1097,17 @@ function FairPage({ deleteItem, fair, items, createItem, onBack, onOpenProduct, 
   const [showNewItem, setShowNewItem] = useState(false);
   const [newItem, setNewItem] = useState({ name: "", price: "", quantity: "1" });
   const [saving, setSaving] = useState(false);
+  const [backPressed, setBackPressed] = useState(false);
+
+  const handleBack = () => {
+    if (backPressed) {
+      return;
+    }
+
+    triggerHaptic("selection");
+    setBackPressed(true);
+    window.setTimeout(onBack, 140);
+  };
 
   const saveBudget = async () => {
     setEditingBudget(false);
@@ -752,7 +1151,7 @@ function FairPage({ deleteItem, fair, items, createItem, onBack, onOpenProduct, 
   return (
     <section className="fair-screen" aria-label={`Feira ${fair.label}`}>
       <header className="fair-screen-header">
-        <button className="icon-button screen-back-button" type="button" aria-label="Voltar" onClick={onBack}>
+        <button className={backPressed ? "icon-button screen-back-button is-leaving" : "icon-button screen-back-button"} type="button" aria-label="Voltar" onClick={handleBack}>
           <ArrowLeft size={19} />
         </button>
         <div>
@@ -983,7 +1382,7 @@ function CategoryRingChart({ categories, total }: { categories: CategoryBreakdow
           })}
         </svg>
 
-        <div className="category-ring-center">
+        <div className="category-ring-center" key={displayedCategory?.label ?? "empty"}>
           <strong>{displayedCategory ? `${displayedCategory.percent}%` : "0%"}</strong>
           <span>{displayedCategory ? displayedCategory.label : "adicione categorias"}</span>
           <small>{formatCurrency(displayedCategory?.value ?? total)}</small>
@@ -1413,6 +1812,17 @@ function ProductPage({ deleteItem, fair, item, onBack, togglePurchased, updateIt
     category: item.category ?? "",
     notes: item.notes ?? ""
   });
+  const [backPressed, setBackPressed] = useState(false);
+
+  const handleBack = () => {
+    if (backPressed) {
+      return;
+    }
+
+    triggerHaptic("selection");
+    setBackPressed(true);
+    window.setTimeout(onBack, 140);
+  };
 
   const saveProduct = async () => {
     await updateItem(item.id, {
@@ -1443,7 +1853,7 @@ function ProductPage({ deleteItem, fair, item, onBack, togglePurchased, updateIt
   return (
     <section className="product-screen" aria-label={`Produto ${item.name}`}>
       <header className="product-header">
-        <button className="icon-button screen-back-button" type="button" aria-label="Voltar" onClick={onBack}>
+        <button className={backPressed ? "icon-button screen-back-button is-leaving" : "icon-button screen-back-button"} type="button" aria-label="Voltar" onClick={handleBack}>
           <ArrowLeft size={19} />
         </button>
         <div>
@@ -1618,6 +2028,7 @@ function ProfilePage({ user, fairsCount, itemsCount, logout, theme, toggleTheme,
       }
 
       next.birthDate = draft.birthDate;
+      setEditingField(null);
     }
 
     try {
@@ -1810,6 +2221,30 @@ function ProfileEditableRow({
   saving,
   value
 }: ProfileEditableRowProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!editing) {
+      return;
+    }
+
+    inputRef.current?.focus();
+
+    if (inputMode !== "date") {
+      return;
+    }
+
+    const pickerFrame = window.requestAnimationFrame(() => {
+      try {
+        inputRef.current?.showPicker?.();
+      } catch {
+        inputRef.current?.click();
+      }
+    });
+
+    return () => window.cancelAnimationFrame(pickerFrame);
+  }, [editing, inputMode]);
+
   if (!editing) {
     return (
       <button className="profile-row profile-row-button" type="button" onClick={onEdit}>
@@ -1832,6 +2267,7 @@ function ProfileEditableRow({
           autoFocus
           className="profile-edit-input"
           disabled={saving}
+          ref={inputRef}
           onChange={(event) => onChange(event.target.value)}
           onKeyDown={(event) => {
             if (event.key === "Enter") {

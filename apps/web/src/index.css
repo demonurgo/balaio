@@ -284,6 +284,39 @@ label[for^="web-haptics-"] input[switch] {
   margin-bottom: 18px;
 }
 
+.fair-menu {
+  position: relative;
+}
+
+.fair-menu-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 5;
+  display: grid;
+  min-width: 148px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-elevated);
+  box-shadow: var(--shadow-soft);
+}
+
+.fair-menu-popover button {
+  min-height: 42px;
+  padding: 0 14px;
+  border: 0;
+  color: var(--color-text);
+  background: transparent;
+  font-size: 13px;
+  font-weight: 800;
+  text-align: left;
+}
+
+.fair-menu-popover button:hover {
+  background: var(--color-elevated-hover);
+}
+
 .eyebrow,
 .metric small,
 .fair-row small {
@@ -317,7 +350,43 @@ h2 {
   gap: 8px;
 }
 
+.fair-swipe-shell {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  --swipe-progress: 0;
+}
+
+.fair-delete-action {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-right: 18px;
+  color: var(--color-logo-white);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--color-danger) 72%, transparent) 58%,
+    var(--color-danger) 100%
+  );
+  font-size: 12px;
+  font-weight: 900;
+  opacity: var(--swipe-progress);
+  pointer-events: none;
+  transform: translate3d(calc((1 - var(--swipe-progress)) * 14px), 0, 0);
+  transition: opacity 150ms cubic-bezier(0.16, 1, 0.3, 1), transform 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.fair-swipe-shell.armed .fair-delete-action {
+  background: linear-gradient(90deg, transparent 0%, var(--color-danger) 50%, var(--color-danger) 100%);
+}
+
 .fair-row {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px 14px;
@@ -328,7 +397,9 @@ h2 {
   color: var(--color-text);
   background: transparent;
   text-align: left;
+  touch-action: pan-y;
   transition: transform 140ms ease, background 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
+  will-change: transform;
 }
 
 .fair-row:hover,
@@ -351,6 +422,15 @@ h2 {
 .fair-row:active {
   background: transparent;
   box-shadow: none;
+}
+
+.fair-row.swiping {
+  transition: none;
+}
+
+.fair-row.removing {
+  opacity: 0;
+  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1), opacity 140ms ease;
 }
 
 .fair-row strong,
@@ -702,6 +782,7 @@ h2 {
 .screen-back-button,
 .fair-screen-header .screen-back-button,
 .product-header .screen-back-button {
+  position: relative;
   width: 46px;
   min-width: 46px;
   height: 46px;
@@ -710,12 +791,38 @@ h2 {
   border-radius: 999px;
   color: var(--color-text);
   background: transparent;
+  transition: border-color 160ms ease, transform 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.screen-back-button::after {
+  position: absolute;
+  inset: -6px;
+  border: 1px dashed color-mix(in srgb, var(--color-primary) 38%, transparent);
+  border-radius: inherit;
+  content: "";
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.74);
 }
 
 .screen-back-button svg {
   width: 23px;
   height: 23px;
   stroke-width: 2.2;
+}
+
+.screen-back-button:active,
+.screen-back-button.is-leaving {
+  border-color: color-mix(in srgb, var(--color-primary) 52%, transparent);
+  transform: scale(0.92);
+}
+
+.screen-back-button.is-leaving::after {
+  animation: back-halo 220ms ease-out;
+}
+
+.screen-back-button.is-leaving svg {
+  animation: back-arrow 180ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .items-table {
@@ -867,7 +974,8 @@ h2 {
 }
 
 .fair-screen,
-.product-screen {
+.product-screen,
+.all-fairs-page {
   display: grid;
   gap: 18px;
   width: min(100%, 820px);
@@ -1026,7 +1134,12 @@ h2 {
 }
 
 .category-ring-hit.active .category-ring-segment {
+  animation: category-segment-pop 340ms cubic-bezier(0.16, 1, 0.3, 1);
   filter: saturate(1.04);
+}
+
+.category-ring-hit.active .category-ring-icon {
+  animation: category-icon-pop 340ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .category-ring-icon {
@@ -1044,6 +1157,7 @@ h2 {
   display: grid;
   justify-items: center;
   width: 112px;
+  animation: category-center-pop 220ms cubic-bezier(0.16, 1, 0.3, 1);
   transform: translate(-50%, -50%);
   text-align: center;
 }
@@ -1645,6 +1759,72 @@ h2 {
   100% {
     opacity: 1;
     transform: scale(1);
+  }
+}
+
+@keyframes back-halo {
+  0% {
+    opacity: 0.55;
+    transform: scale(0.74);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.12);
+  }
+}
+
+@keyframes back-arrow {
+  0% {
+    transform: translateX(0);
+  }
+
+  55% {
+    transform: translateX(-4px);
+  }
+
+  100% {
+    transform: translateX(-1px);
+  }
+}
+
+@keyframes category-segment-pop {
+  0% {
+    transform: rotate(-90deg) scale(0.97);
+  }
+
+  62% {
+    transform: rotate(-90deg) scale(1.035);
+  }
+
+  100% {
+    transform: rotate(-90deg) scale(1);
+  }
+}
+
+@keyframes category-icon-pop {
+  0% {
+    transform: scale(0.82);
+  }
+
+  62% {
+    transform: scale(1.16);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes category-center-pop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -46%) scale(0.94);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
   }
 }
 
@@ -2254,7 +2434,8 @@ h2 {
   }
 
   .fair-screen,
-  .product-screen {
+  .product-screen,
+  .all-fairs-page {
     gap: 16px;
     width: 100%;
     margin-top: 0;
@@ -2446,6 +2627,7 @@ h2 {
   .profile-page {
     gap: 16px;
     margin-top: 0;
+    padding-top: max(env(safe-area-inset-top), 20px);
   }
 
   .profile-overview {
@@ -2513,7 +2695,7 @@ h2 {
     bottom: 20px;
     z-index: 20;
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     min-height: 66px;
     padding: 8px 10px;
     border: 1px solid color-mix(in srgb, var(--color-border) 76%, transparent);
@@ -2547,7 +2729,7 @@ h2 {
   }
 
   .bottom-tab span {
-    font-size: 10px;
+    font-size: 9px;
     line-height: 1;
   }
 
