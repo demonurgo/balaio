@@ -699,6 +699,25 @@ h2 {
   min-height: 30px;
 }
 
+.screen-back-button,
+.fair-screen-header .screen-back-button,
+.product-header .screen-back-button {
+  width: 46px;
+  min-width: 46px;
+  height: 46px;
+  min-height: 46px;
+  border: 2px dashed color-mix(in srgb, var(--color-muted) 58%, transparent);
+  border-radius: 999px;
+  color: var(--color-text);
+  background: transparent;
+}
+
+.screen-back-button svg {
+  width: 23px;
+  height: 23px;
+  stroke-width: 2.2;
+}
+
 .items-table {
   padding: 8px 18px 0;
 }
@@ -2299,6 +2318,7 @@ h2 {
     gap: 16px;
     width: 100%;
     margin-top: 0;
+    padding-top: max(env(safe-area-inset-top), 20px);
     padding-bottom: 110px;
   }
 
@@ -2313,6 +2333,15 @@ h2 {
     min-height: 32px;
     border: 0;
     background: transparent;
+  }
+
+  .fair-screen-header .screen-back-button,
+  .product-header .screen-back-button {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    border: 2px dashed color-mix(in srgb, var(--color-muted) 58%, transparent);
   }
 
   .fair-screen-header h1,

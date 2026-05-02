@@ -254,32 +254,34 @@ function App() {
       </aside>
 
       <section className="content">
-        <header className="topbar">
-          <button type="button" className="mobile-brand brand-button" onClick={handleLogoClick} aria-label="Balaio">
-            <img ref={mobileBrandRef} src={logoSrc} alt="Balaio" />
-          </button>
-          <div className="collaborators" aria-label="Pessoas online">
-            <span className="avatar">MA</span>
-            <span className="avatar">JR</span>
-            <span className="live-dot" />
-          </div>
-          <button
-            className="icon-button theme-toggle"
-            type="button"
-            aria-label={theme === "dark" ? "Ativar tema claro" : "Ativar tema escuro"}
-            onClick={() => {
-              triggerHaptic("selection");
-              toggleTheme();
-            }}
-            title={theme === "dark" ? "Tema claro" : "Tema escuro"}
-          >
-            {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
-          </button>
-          <button className="primary-button add-fair-button" type="button" onClick={() => void handleCreateFair()}>
-            <Plus size={17} />
-            <span>Nova feira</span>
-          </button>
-        </header>
+        {view === "feiras" ? (
+          <header className="topbar">
+            <button type="button" className="mobile-brand brand-button" onClick={handleLogoClick} aria-label="Balaio">
+              <img ref={mobileBrandRef} src={logoSrc} alt="Balaio" />
+            </button>
+            <div className="collaborators" aria-label="Pessoas online">
+              <span className="avatar">MA</span>
+              <span className="avatar">JR</span>
+              <span className="live-dot" />
+            </div>
+            <button
+              className="icon-button theme-toggle"
+              type="button"
+              aria-label={theme === "dark" ? "Ativar tema claro" : "Ativar tema escuro"}
+              onClick={() => {
+                triggerHaptic("selection");
+                toggleTheme();
+              }}
+              title={theme === "dark" ? "Tema claro" : "Tema escuro"}
+            >
+              {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+            <button className="primary-button add-fair-button" type="button" onClick={() => void handleCreateFair()}>
+              <Plus size={17} />
+              <span>Nova feira</span>
+            </button>
+          </header>
+        ) : null}
 
         {view === "perfil" ? (
           <ProfilePage
@@ -750,7 +752,7 @@ function FairPage({ deleteItem, fair, items, createItem, onBack, onOpenProduct, 
   return (
     <section className="fair-screen" aria-label={`Feira ${fair.label}`}>
       <header className="fair-screen-header">
-        <button className="icon-button" type="button" aria-label="Voltar" onClick={onBack}>
+        <button className="icon-button screen-back-button" type="button" aria-label="Voltar" onClick={onBack}>
           <ArrowLeft size={19} />
         </button>
         <div>
@@ -1460,7 +1462,7 @@ function ProductPage({ deleteItem, fair, item, onBack, togglePurchased, updateIt
   return (
     <section className="product-screen" aria-label={`Produto ${item.name}`}>
       <header className="product-header">
-        <button className="icon-button" type="button" aria-label="Voltar" onClick={onBack}>
+        <button className="icon-button screen-back-button" type="button" aria-label="Voltar" onClick={onBack}>
           <ArrowLeft size={19} />
         </button>
         <div>
