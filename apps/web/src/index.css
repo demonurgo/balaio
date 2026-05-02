@@ -989,16 +989,11 @@ h2 {
   overflow: visible;
 }
 
-.category-ring-track,
 .category-ring-segment {
   fill: none;
   stroke-width: 30;
   transform: rotate(-90deg);
   transform-origin: 110px 110px;
-}
-
-.category-ring-track {
-  stroke: color-mix(in srgb, var(--color-border) 48%, transparent);
 }
 
 .category-ring-segment {

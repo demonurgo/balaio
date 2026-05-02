@@ -937,7 +937,6 @@ function CategoryRingChart({ categories, total }: { categories: CategoryBreakdow
 
       <div className="category-ring-visual">
         <svg className="category-ring-svg" viewBox="0 0 220 220" role="img" aria-label="Grafico de categorias">
-          <circle className="category-ring-track" cx="110" cy="110" r={radius} />
           {segments.map(({ category, dash, offset }) => {
             const strokeDashoffset = -offset;
             const sweep = (dash / circumference) * 360;
