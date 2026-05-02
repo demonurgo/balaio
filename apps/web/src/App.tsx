@@ -907,11 +907,11 @@ type CategoryBreakdownItem = ReturnType<typeof getCategoryBreakdown>["categories
 
 function CategoryRingChart({ categories, total }: { categories: CategoryBreakdownItem[]; total: number }) {
   const leading = categories[0];
-  const radius = 78;
+  const radius = 76;
   const circumference = 2 * Math.PI * radius;
-  const gap = categories.length > 1 ? 12 : 0;
+  const gap = categories.length > 1 ? 24 : 0;
   const available = circumference - gap * categories.length;
-  const getDash = (category: CategoryBreakdownItem) => Math.max((category.percent / 100) * available, categories.length === 1 ? available : 8);
+  const getDash = (category: CategoryBreakdownItem) => Math.max((category.percent / 100) * available, categories.length === 1 ? available : 24);
   const segments = categories.map((category, index) => ({
     category,
     dash: getDash(category),
@@ -932,7 +932,7 @@ function CategoryRingChart({ categories, total }: { categories: CategoryBreakdow
             const strokeDashoffset = -offset;
             const sweep = (dash / circumference) * 360;
             const angle = -90 + (offset / circumference) * 360 + sweep / 2;
-            const iconRadius = 96;
+            const iconRadius = 76;
             const iconX = 110 + Math.cos((angle * Math.PI) / 180) * iconRadius;
             const iconY = 110 + Math.sin((angle * Math.PI) / 180) * iconRadius;
             const Icon = category.Icon;
@@ -948,9 +948,9 @@ function CategoryRingChart({ categories, total }: { categories: CategoryBreakdow
                   strokeDasharray={`${dash} ${circumference - dash}`}
                   strokeDashoffset={strokeDashoffset}
                 />
-                <foreignObject height="34" width="34" x={iconX - 17} y={iconY - 17}>
+                <foreignObject height="30" width="30" x={iconX - 15} y={iconY - 15}>
                   <span className="category-ring-icon" style={{ backgroundColor: category.color }}>
-                    <Icon size={18} />
+                    <Icon size={16} />
                   </span>
                 </foreignObject>
               </g>
