@@ -20,7 +20,6 @@ import {
   Moon,
   MoreHorizontal,
   Plus,
-  Salad,
   Sandwich,
   Share2,
   ShieldCheck,
@@ -759,18 +758,19 @@ const SWIPE_START_DISTANCE = 8;
 const SWIPE_DELETE_DISTANCE = 118;
 const SWIPE_REVEAL_DISTANCE = 126;
 const CATEGORY_COLORS = ["#f6d957", "#a7bc72", "#eda8cf", "#adc8ed", "#f0a9ce", "#f4c76e", "#9fcbb1", "#c9b8ef", "#8fd3c7", "#d9c48a"];
+const CATEGORY_OPTIONS = ["Carnes", "Legumes", "Frutas", "Bebidas", "Lanches", "Laticínios", "Peixes", "Doces", "Mercearia", "Limpeza", "Outros"];
 const CATEGORY_META = [
-  { icon: Salad, color: "#9fcbb1", keywords: ["salada", "saladas"] },
-  { icon: Carrot, color: "#eda8cf", keywords: ["legume", "legumes", "verdura", "verduras", "hortifruti"] },
-  { icon: Beef, color: "#f4c76e", keywords: ["carne", "carnes", "acougue", "açougue", "frango", "bovina", "suina", "suína"] },
-  { icon: CupSoda, color: "#adc8ed", keywords: ["bebida", "bebidas", "suco", "refrigerante", "agua", "água"] },
-  { icon: Sandwich, color: "#f6d957", keywords: ["lanche", "lanches", "padaria", "pao", "pão", "sanduiche", "sanduíche"] },
-  { icon: Milk, color: "#b8d2f0", keywords: ["leite", "laticinio", "laticínios", "laticinios", "queijo", "iogurte"] },
-  { icon: Fish, color: "#a7bc72", keywords: ["peixe", "peixes", "frutos do mar", "camarao", "camarão"] },
-  { icon: Candy, color: "#f0a9ce", keywords: ["doce", "doces", "sobremesa", "chocolate", "biscoito"] },
-  { icon: Apple, color: "#c9b8ef", keywords: ["fruta", "frutas"] },
-  { icon: Store, color: "#f0a9ce", keywords: ["mercearia", "mercado", "supermercado", "mantimento", "mantimentos", "grao", "graos", "grão", "grãos"] },
+  { label: "Carnes", icon: Beef, color: "#f4c76e", keywords: ["carne", "carnes", "acougue", "açougue", "frango", "bovina", "suina", "suína", "alcatra", "patinho", "maminha", "coxao", "coxa", "carne moida"] },
+  { label: "Legumes", icon: Carrot, color: "#eda8cf", keywords: ["legume", "legumes", "verdura", "verduras", "hortifruti", "cenoura", "batata", "tomate", "alface", "cebola", "pepino", "abobrinha", "mandioca", "brocolis", "brócolis"] },
+  { label: "Frutas", icon: Apple, color: "#c9b8ef", keywords: ["fruta", "frutas", "banana", "maca", "maçã", "uva", "laranja", "mamao", "mamão", "abacaxi", "melancia", "limao", "limão"] },
+  { label: "Bebidas", icon: CupSoda, color: "#adc8ed", keywords: ["bebida", "bebidas", "suco", "refrigerante", "agua", "água", "cerveja", "vinho"] },
+  { label: "Lanches", icon: Sandwich, color: "#f6d957", keywords: ["lanche", "lanches", "padaria", "pao", "pão", "sanduiche", "sanduíche"] },
+  { label: "Laticínios", icon: Milk, color: "#b8d2f0", keywords: ["leite", "laticinio", "laticínios", "laticinios", "queijo", "iogurte", "requeijao", "requeijão", "manteiga"] },
+  { label: "Peixes", icon: Fish, color: "#a7bc72", keywords: ["peixe", "peixes", "frutos do mar", "camarao", "camarão", "tilapia", "tilápia", "salmao", "salmão"] },
+  { label: "Doces", icon: Candy, color: "#f7bf8b", keywords: ["doce", "doces", "sobremesa", "chocolate", "biscoito"] },
+  { label: "Mercearia", icon: Store, color: "#f0a9ce", keywords: ["mercearia", "mercado", "supermercado", "mantimento", "mantimentos", "grao", "graos", "grão", "grãos", "arroz", "feijao", "feijão", "macarrao", "macarrão", "farinha", "oleo", "óleo"] },
   {
+    label: "Limpeza",
     icon: SprayCan,
     color: "#8fd3c7",
     keywords: [
@@ -791,7 +791,7 @@ const CATEGORY_META = [
       "multiuso"
     ]
   },
-  { icon: Tag, color: "#d8d6cf", keywords: ["outros", "sem categoria", "diversos"] }
+  { label: "Outros", icon: Tag, color: "#d8d6cf", keywords: ["outros", "sem categoria", "diversos"] }
 ];
 
 function getResistedSwipe(distance: number) {
@@ -1107,7 +1107,14 @@ function AllFairsPage({ deleteFair, fairError, fairStatus, fairs, onBack, onOpen
 
 function getCategoryLabel(item: FairItem) {
   const category = item.category?.trim();
-  return category || "Sem categoria";
+  const inferred = getCategoryMeta(item.name)?.label;
+  const normalizedCategory = normalizeCategoryLabel(category ?? "");
+
+  if (!category || normalizedCategory === "outros" || normalizedCategory === "sem categoria") {
+    return inferred ?? "Outros";
+  }
+
+  return getCategoryMeta(category)?.label ?? category;
 }
 
 function normalizeCategoryLabel(label: string) {
@@ -1994,6 +2001,15 @@ function FairTodoRow({ categoryColor, deleteItem, item, onOpenDetail, togglePurc
 }
 
 function ProductPage({ deleteItem, fair, item, onBack, togglePurchased, updateItem }: ProductPageProps) {
+  const categoryOptions = useMemo(() => {
+    const currentCategory = item.category?.trim();
+
+    if (currentCategory && !CATEGORY_OPTIONS.some((category) => normalizeCategoryLabel(category) === normalizeCategoryLabel(currentCategory))) {
+      return [...CATEGORY_OPTIONS, currentCategory];
+    }
+
+    return CATEGORY_OPTIONS;
+  }, [item.category]);
   const [draft, setDraft] = useState({
     name: item.name,
     price: String(item.unitPrice).replace(".", ","),
@@ -2104,7 +2120,13 @@ function ProductPage({ deleteItem, fair, item, onBack, togglePurchased, updateIt
             <Tag size={14} />
             Categoria
           </span>
-          <input value={draft.category} onChange={(event) => setDraft((current) => ({ ...current, category: event.target.value }))} />
+          <select value={draft.category || "Outros"} onChange={(event) => setDraft((current) => ({ ...current, category: event.target.value }))}>
+            {categoryOptions.map((category) => (
+              <option key={category} value={category}>
+                {category}
+              </option>
+            ))}
+          </select>
         </label>
 
         <label className="product-field">
