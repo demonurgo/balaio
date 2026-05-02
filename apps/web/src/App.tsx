@@ -940,7 +940,7 @@ function CategoryRingChart({ categories, total }: { categories: CategoryBreakdow
       iconY: 110 + Math.sin((angle * Math.PI) / 180) * iconRadius
     };
   });
-  const activeSegment = segments.find(({ category }) => category.label === activeCategory?.label);
+  const displayedCategory = activeCategory ?? leading;
 
   return (
     <section className="category-ring-card" aria-label="Distribuicao por categoria">
@@ -982,26 +982,11 @@ function CategoryRingChart({ categories, total }: { categories: CategoryBreakdow
             );
           })}
         </svg>
-        {activeCategory && activeSegment ? (
-          <div
-            className="category-ring-tooltip"
-            style={
-              {
-                "--tooltip-x": `${(activeSegment.iconX / 220) * 100}%`,
-                "--tooltip-y": `${(activeSegment.iconY / 220) * 100}%`,
-                "--tooltip-color": activeCategory.color
-              } as CSSProperties
-            }
-          >
-            <strong>{activeCategory.label}</strong>
-            <span>{activeCategory.percent}%</span>
-          </div>
-        ) : null}
 
         <div className="category-ring-center">
-          <strong>{leading ? `${leading.percent}%` : "0%"}</strong>
-          <span>{leading ? leading.label : "adicione categorias"}</span>
-          <small>{formatCurrency(leading?.value ?? total)}</small>
+          <strong>{displayedCategory ? `${displayedCategory.percent}%` : "0%"}</strong>
+          <span>{displayedCategory ? displayedCategory.label : "adicione categorias"}</span>
+          <small>{formatCurrency(displayedCategory?.value ?? total)}</small>
         </div>
       </div>
 

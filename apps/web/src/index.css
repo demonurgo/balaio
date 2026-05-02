@@ -1038,56 +1038,6 @@ h2 {
   background: transparent !important;
 }
 
-.category-ring-tooltip {
-  position: absolute;
-  left: var(--tooltip-x);
-  top: var(--tooltip-y);
-  z-index: 2;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 28px;
-  max-width: 138px;
-  padding: 0 10px;
-  border: 1px solid color-mix(in srgb, var(--tooltip-color) 62%, var(--color-bg));
-  border-radius: 999px;
-  color: var(--color-text);
-  background: color-mix(in srgb, var(--tooltip-color) 42%, var(--color-bg));
-  box-shadow: 0 10px 26px rgba(20, 38, 31, 0.14);
-  pointer-events: none;
-  transform: translate(-50%, calc(-100% - 16px));
-}
-
-.category-ring-tooltip::after {
-  position: absolute;
-  bottom: -5px;
-  left: 50%;
-  width: 9px;
-  height: 9px;
-  border-right: 1px solid color-mix(in srgb, var(--tooltip-color) 62%, var(--color-bg));
-  border-bottom: 1px solid color-mix(in srgb, var(--tooltip-color) 62%, var(--color-bg));
-  background: color-mix(in srgb, var(--tooltip-color) 42%, var(--color-bg));
-  content: "";
-  transform: translateX(-50%) rotate(45deg);
-}
-
-.category-ring-tooltip strong,
-.category-ring-tooltip span {
-  position: relative;
-  z-index: 1;
-  overflow: hidden;
-  font-size: 12px;
-  font-weight: 900;
-  line-height: 1;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.category-ring-tooltip span {
-  color: var(--color-text);
-  font-variant-numeric: tabular-nums;
-}
-
 .category-ring-center {
   position: absolute;
   inset: 50% auto auto 50%;
