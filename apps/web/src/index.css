@@ -2255,8 +2255,8 @@ h2 {
   .fair-row:hover,
   .fair-row.active {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) max-content;
-    gap: 7px 14px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 7px;
     min-height: 82px;
     padding: 0 0 14px;
     margin-bottom: 14px;
@@ -2273,6 +2273,7 @@ h2 {
     display: grid;
     gap: 5px;
     align-self: start;
+    padding-right: 140px;
   }
 
   .fair-row > span:first-child strong {
@@ -2287,8 +2288,9 @@ h2 {
   }
 
   .money-block {
-    align-self: start;
-    justify-self: end;
+    position: absolute;
+    top: 1px;
+    right: 0;
     padding-top: 2px;
     gap: 5px;
   }
@@ -2309,7 +2311,7 @@ h2 {
 
   .progress-track {
     grid-column: 1 / 2;
-    width: min(100%, 205px);
+    width: calc(100% - 16px);
     height: 4px;
     margin-top: 8px;
     background: #e8e5de;
