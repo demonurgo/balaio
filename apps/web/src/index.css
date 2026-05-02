@@ -1669,7 +1669,7 @@ h2 {
 
 .product-actions {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 10px;
 }
 
@@ -2693,10 +2693,6 @@ h2 {
 
   .product-save {
     min-height: 44px;
-  }
-
-  .product-actions {
-    grid-template-columns: 1fr;
   }
 
   .product-delete {

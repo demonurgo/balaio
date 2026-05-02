@@ -2141,7 +2141,7 @@ function ProductPage({ deleteItem, fair, item, onBack, togglePurchased, updateIt
       <div className="product-actions">
         <button className="product-save" type="button" onClick={() => void saveProduct()}>
           <Check size={17} />
-          Salvar produto
+          Salvar
         </button>
         <button
           className="product-delete"
