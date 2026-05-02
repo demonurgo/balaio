@@ -989,7 +989,6 @@ function DashboardFairRow({ deleteFair, fair, isActive, onOpen, progress }: Dash
             <small>Total</small>
             <strong>{formatCurrency(fair.total)}</strong>
           </span>
-          <ChevronRight className="fair-row-arrow" size={24} aria-hidden="true" />
           <span className="progress-track" aria-hidden="true">
             <span style={{ width: `${progress}%` }} />
           </span>
