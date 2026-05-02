@@ -1104,7 +1104,7 @@ function FairTodoRow({ deleteItem, item, onOpenDetail, togglePurchased, updateIt
       armed: false
     };
 
-    if ((event.target as HTMLElement).closest(".item-check-button, .item-detail-button, input")) {
+    if ((event.target as HTMLElement).closest(".item-check-button, input")) {
       return;
     }
 
@@ -1415,10 +1415,6 @@ function FairTodoRow({ deleteItem, item, onOpenDetail, togglePurchased, updateIt
             </button>
           )}
         </div>
-
-        <button className="item-detail-button" type="button" aria-label={`Detalhes de ${item.name}`} onClick={onOpenDetail}>
-          <ChevronRight size={17} />
-        </button>
       </div>
     </div>
   );

@@ -1185,7 +1185,7 @@ h2 {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: 30px minmax(0, 1fr) auto 42px 20px;
+  grid-template-columns: 30px minmax(0, 1fr) auto 42px;
   align-items: center;
   gap: 10px;
   min-height: 56px;
@@ -1221,7 +1221,6 @@ h2 {
 }
 
 .item-check-button,
-.item-detail-button,
 .todo-name-button,
 .todo-price-button,
 .todo-qty-button {
@@ -1286,15 +1285,6 @@ h2 {
 .todo-qty-button {
   color: var(--color-muted);
   font-size: 12px;
-}
-
-.item-detail-button {
-  display: grid;
-  place-items: center;
-  width: 20px;
-  min-height: 28px;
-  padding: 0;
-  color: var(--color-muted);
 }
 
 .todo-inline-input {
@@ -2415,7 +2405,7 @@ h2 {
   }
 
   .todo-item {
-    grid-template-columns: 28px minmax(0, 1fr) auto 34px 16px;
+    grid-template-columns: 28px minmax(0, 1fr) auto 34px;
     gap: 8px;
     min-height: 54px;
   }
@@ -2435,10 +2425,6 @@ h2 {
 
   .todo-qty-button {
     font-size: 11px;
-  }
-
-  .item-detail-button {
-    width: 16px;
   }
 
   .todo-inline-input {
