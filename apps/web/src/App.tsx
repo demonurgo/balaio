@@ -769,7 +769,7 @@ const CATEGORY_META = [
   { icon: Fish, color: "#a7bc72", keywords: ["peixe", "peixes", "frutos do mar", "camarao", "camarão"] },
   { icon: Candy, color: "#f0a9ce", keywords: ["doce", "doces", "sobremesa", "chocolate", "biscoito"] },
   { icon: Apple, color: "#c9b8ef", keywords: ["fruta", "frutas"] },
-  { icon: Store, color: "#f4c76e", keywords: ["mercearia", "mercado", "supermercado", "mantimento", "mantimentos", "grao", "graos", "grão", "grãos"] },
+  { icon: Store, color: "#f0a9ce", keywords: ["mercearia", "mercado", "supermercado", "mantimento", "mantimentos", "grao", "graos", "grão", "grãos"] },
   {
     icon: SprayCan,
     color: "#8fd3c7",
@@ -791,7 +791,7 @@ const CATEGORY_META = [
       "multiuso"
     ]
   },
-  { icon: Tag, color: "#d9c48a", keywords: ["outros", "sem categoria", "diversos"] }
+  { icon: Tag, color: "#d8d6cf", keywords: ["outros", "sem categoria", "diversos"] }
 ];
 
 function getResistedSwipe(distance: number) {
