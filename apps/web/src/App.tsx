@@ -1151,20 +1151,7 @@ function getCategoryBreakdown(items: FairItem[]) {
   });
 
   const total = Array.from(totals.values()).reduce((sum, item) => sum + item.value, 0);
-  const sorted = Array.from(totals.values()).sort((a, b) => b.value - a.value);
-  const visible = sorted.length > 6 ? sorted.slice(0, 5) : sorted;
-  const hidden = sorted.length > 6 ? sorted.slice(5) : [];
-  const displayCategories = hidden.length
-    ? [
-        ...visible,
-        {
-          label: "Outros",
-          value: hidden.reduce((sum, item) => sum + item.value, 0),
-          count: hidden.reduce((sum, item) => sum + item.count, 0)
-        }
-      ]
-    : visible;
-  const categories = displayCategories.map((item, index) => ({
+  const categories = Array.from(totals.values()).sort((a, b) => b.value - a.value).map((item, index) => ({
       ...item,
       color: getCategoryColor(item.label, index),
       Icon: getCategoryIcon(item.label),
