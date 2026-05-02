@@ -919,7 +919,7 @@ function CategoryRingChart({ categories, total }: { categories: CategoryBreakdow
   const leading = categories[0];
   const radius = 76;
   const circumference = 2 * Math.PI * radius;
-  const gap = categories.length > 1 ? 42 : 0;
+  const gap = categories.length > 1 ? 34 : 0;
   const available = circumference - gap * categories.length;
   const getDash = (category: CategoryBreakdownItem) => (category.percent / 100) * available;
   const segments = categories.map((category, index) => ({
