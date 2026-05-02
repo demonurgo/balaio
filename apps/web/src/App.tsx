@@ -672,13 +672,23 @@ function getCategoryBreakdown(items: FairItem[]) {
   });
 
   const total = Array.from(totals.values()).reduce((sum, item) => sum + item.value, 0);
-  const categories = Array.from(totals.values())
-    .sort((a, b) => b.value - a.value)
-    .slice(0, 8)
-    .map((item, index) => ({
+  const sorted = Array.from(totals.values()).sort((a, b) => b.value - a.value);
+  const visible = sorted.length > 6 ? sorted.slice(0, 5) : sorted;
+  const hidden = sorted.length > 6 ? sorted.slice(5) : [];
+  const displayCategories = hidden.length
+    ? [
+        ...visible,
+        {
+          label: "Outros",
+          value: hidden.reduce((sum, item) => sum + item.value, 0),
+          count: hidden.reduce((sum, item) => sum + item.count, 0)
+        }
+      ]
+    : visible;
+  const categories = displayCategories.map((item, index) => ({
       ...item,
       color: CATEGORY_COLORS[index % CATEGORY_COLORS.length],
-      Icon: getCategoryIcon(item.label),
+      Icon: item.label === "Outros" ? ShoppingBasket : getCategoryIcon(item.label),
       percent: total > 0 ? Math.round((item.value / total) * 100) : 0
     }));
 
@@ -909,9 +919,9 @@ function CategoryRingChart({ categories, total }: { categories: CategoryBreakdow
   const leading = categories[0];
   const radius = 76;
   const circumference = 2 * Math.PI * radius;
-  const gap = categories.length > 1 ? 24 : 0;
+  const gap = categories.length > 1 ? 58 : 0;
   const available = circumference - gap * categories.length;
-  const getDash = (category: CategoryBreakdownItem) => Math.max((category.percent / 100) * available, categories.length === 1 ? available : 24);
+  const getDash = (category: CategoryBreakdownItem) => (category.percent / 100) * available;
   const segments = categories.map((category, index) => ({
     category,
     dash: getDash(category),
