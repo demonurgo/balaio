@@ -757,16 +757,16 @@ type SwipeState = {
 const SWIPE_START_DISTANCE = 8;
 const SWIPE_DELETE_DISTANCE = 118;
 const SWIPE_REVEAL_DISTANCE = 126;
-const CATEGORY_COLORS = ["#f4b36a", "#f29b73", "#b8a7ee", "#9ec3f1", "#f6d957", "#c7df8f", "#83b879", "#f2a0a1", "#f0a9ce", "#8fd3c7", "#d8d6cf"];
+const CATEGORY_COLORS = ["#f4b36a", "#f29b73", "#ef8f8f", "#9ec3f1", "#f6d957", "#c7df8f", "#82c7dc", "#f2a0a1", "#f0a9ce", "#8fd3c7", "#d8d6cf"];
 const CATEGORY_OPTIONS = ["Carnes", "Legumes", "Frutas", "Bebidas", "Lanches", "Laticínios", "Peixes", "Doces", "Mercearia", "Limpeza", "Outros"];
 const CATEGORY_META = [
   { label: "Carnes", icon: Beef, color: "#f4b36a", keywords: ["carne", "carnes", "acougue", "açougue", "frango", "bovina", "suina", "suína", "alcatra", "patinho", "maminha", "coxao", "coxa", "carne moida"] },
   { label: "Legumes", icon: Carrot, color: "#f29b73", keywords: ["legume", "legumes", "verdura", "verduras", "hortifruti", "cenoura", "batata", "tomate", "alface", "cebola", "pepino", "abobrinha", "mandioca", "brocolis", "brócolis"] },
-  { label: "Frutas", icon: Apple, color: "#b8a7ee", keywords: ["fruta", "frutas", "banana", "maca", "maçã", "uva", "laranja", "mamao", "mamão", "abacaxi", "melancia", "limao", "limão"] },
+  { label: "Frutas", icon: Apple, color: "#ef8f8f", keywords: ["fruta", "frutas", "banana", "maca", "maçã", "uva", "laranja", "mamao", "mamão", "abacaxi", "melancia", "limao", "limão"] },
   { label: "Bebidas", icon: CupSoda, color: "#9ec3f1", keywords: ["bebida", "bebidas", "suco", "refrigerante", "agua", "água", "cerveja", "vinho"] },
   { label: "Lanches", icon: Sandwich, color: "#f6d957", keywords: ["lanche", "lanches", "padaria", "pao", "pão", "sanduiche", "sanduíche"] },
   { label: "Laticínios", icon: Milk, color: "#c7df8f", keywords: ["leite", "laticinio", "laticínios", "laticinios", "queijo", "iogurte", "requeijao", "requeijão", "manteiga"] },
-  { label: "Peixes", icon: Fish, color: "#83b879", keywords: ["peixe", "peixes", "frutos do mar", "camarao", "camarão", "tilapia", "tilápia", "salmao", "salmão"] },
+  { label: "Peixes", icon: Fish, color: "#82c7dc", keywords: ["peixe", "peixes", "frutos do mar", "camarao", "camarão", "tilapia", "tilápia", "salmao", "salmão"] },
   { label: "Doces", icon: Candy, color: "#f2a0a1", keywords: ["doce", "doces", "sobremesa", "chocolate", "biscoito"] },
   { label: "Mercearia", icon: Store, color: "#f0a9ce", keywords: ["mercearia", "mercado", "supermercado", "mantimento", "mantimentos", "grao", "graos", "grão", "grãos", "arroz", "feijao", "feijão", "macarrao", "macarrão", "farinha", "oleo", "óleo"] },
   {
@@ -1556,7 +1556,7 @@ function CategoryRingChart({ categories, total }: { categories: CategoryBreakdow
                 />
                 <foreignObject height="30" width="30" x={iconX - 15} y={iconY - 15}>
                   <span className="category-ring-icon" style={{ backgroundColor: category.color }}>
-                    <Icon size={16} />
+                    <Icon size={14} />
                   </span>
                 </foreignObject>
               </g>

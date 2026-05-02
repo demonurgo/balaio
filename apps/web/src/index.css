@@ -1037,22 +1037,22 @@ h2 {
 }
 
 .fair-realtime-button span {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: inherit;
   background: var(--color-success);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-success) 18%, transparent), 0 0 18px color-mix(in srgb, var(--color-success) 82%, transparent);
-  animation: realtimePulse 1.9s ease-in-out infinite;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-success) 12%, transparent), 0 0 10px color-mix(in srgb, var(--color-success) 44%, transparent);
+  animation: realtimePulse 2.4s ease-in-out infinite;
 }
 
 .fair-realtime-button.unstable span {
   background: var(--color-warning);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-warning) 20%, transparent), 0 0 18px color-mix(in srgb, var(--color-warning) 82%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-warning) 14%, transparent), 0 0 10px color-mix(in srgb, var(--color-warning) 44%, transparent);
 }
 
 .fair-realtime-button.offline span {
   background: var(--color-danger);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-danger) 18%, transparent), 0 0 18px color-mix(in srgb, var(--color-danger) 82%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-danger) 12%, transparent), 0 0 10px color-mix(in srgb, var(--color-danger) 42%, transparent);
 }
 
 .fair-status-tooltip {
@@ -1214,8 +1214,8 @@ h2 {
 .category-ring-icon {
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
+  width: 26px;
+  height: 26px;
   color: #243027;
   background: transparent !important;
 }
