@@ -1127,6 +1127,10 @@ function FairPage({ deleteItem, fair, items, createItem, onBack, onOpenProduct, 
   const purchasedTotal = purchasedItems.reduce((sum, item) => sum + item.totalPrice, 0);
   const pendingTotal = items.filter((item) => !item.purchased).reduce((sum, item) => sum + item.totalPrice, 0);
   const categoryBreakdown = useMemo(() => getCategoryBreakdown(items), [items]);
+  const categoryColorByLabel = useMemo(
+    () => new Map(categoryBreakdown.categories.map((category) => [category.label.toLowerCase(), category.color])),
+    [categoryBreakdown.categories]
+  );
   const [editingBudget, setEditingBudget] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [budgetDraft, setBudgetDraft] = useState(String(fair.budget).replace(".", ","));
@@ -1278,6 +1282,7 @@ function FairPage({ deleteItem, fair, items, createItem, onBack, onOpenProduct, 
         {items.length === 0 ? <p className="empty-list">Ainda sem itens.</p> : null}
         {items.map((item) => (
           <FairTodoRow
+            categoryColor={categoryColorByLabel.get(getCategoryLabel(item).toLowerCase()) ?? categoryColorByLabel.get("outros") ?? CATEGORY_COLORS[0]}
             deleteItem={deleteItem}
             item={item}
             key={item.id}
@@ -1345,6 +1350,7 @@ function FairPage({ deleteItem, fair, items, createItem, onBack, onOpenProduct, 
 }
 
 type FairTodoRowProps = {
+  categoryColor: string;
   deleteItem: (itemId: string) => Promise<void>;
   item: FairItem;
   onOpenDetail: () => void;
@@ -1365,7 +1371,8 @@ function CategoryRingChart({ categories, total }: { categories: CategoryBreakdow
     const dash = getDash(category);
     const offset = categories.slice(0, index).reduce((sum, current) => sum + getDash(current) + gap, 0);
     const sweep = (dash / circumference) * 360;
-    const angle = -90 + (offset / circumference) * 360 + sweep / 2;
+    const endInset = Math.min(12, sweep * 0.35);
+    const angle = -90 + (offset / circumference) * 360 + sweep - endInset;
     const iconRadius = 76;
 
     return {
@@ -1430,7 +1437,7 @@ function CategoryRingChart({ categories, total }: { categories: CategoryBreakdow
   );
 }
 
-function FairTodoRow({ deleteItem, item, onOpenDetail, togglePurchased, updateItem }: FairTodoRowProps) {
+function FairTodoRow({ categoryColor, deleteItem, item, onOpenDetail, togglePurchased, updateItem }: FairTodoRowProps) {
   const [editing, setEditing] = useState<ItemField | null>(null);
   const [draft, setDraft] = useState({
     name: item.name,
@@ -1774,6 +1781,7 @@ function FairTodoRow({ deleteItem, item, onOpenDetail, togglePurchased, updateIt
       >
         <button
           className="item-check-button"
+          style={{ "--item-category-color": categoryColor } as CSSProperties}
           type="button"
           aria-label={item.purchased ? `${item.name} comprado` : `Marcar ${item.name} como comprado`}
           onClick={() => {
