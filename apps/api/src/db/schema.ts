@@ -14,6 +14,7 @@ import {
 } from "drizzle-orm/pg-core";
 
 export const memberRole = pgEnum("member_role", ["owner", "editor", "viewer"]);
+export const stockStatus = pgEnum("stock_status", ["in_stock", "consumed"]);
 
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -96,10 +97,38 @@ export const productTemplates = pgTable("product_templates", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
 });
 
+export const stockItems = pgTable(
+  "stock_items",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    sourceFairId: uuid("source_fair_id").references(() => fairs.id, { onDelete: "set null" }),
+    sourceFairItemId: uuid("source_fair_item_id").references(() => fairItems.id, { onDelete: "set null" }),
+    name: varchar("name", { length: 160 }).notNull(),
+    quantity: numeric("quantity", { precision: 10, scale: 2 }).notNull().default("1"),
+    unit: varchar("unit", { length: 24 }).notNull().default("un"),
+    unitPrice: numeric("unit_price", { precision: 12, scale: 2 }).notNull().default("0"),
+    totalPrice: numeric("total_price", { precision: 12, scale: 2 }).notNull().default("0"),
+    category: varchar("category", { length: 80 }),
+    notes: text("notes"),
+    imageUrl: text("image_url"),
+    status: stockStatus("status").notNull().default("in_stock"),
+    consumedAt: timestamp("consumed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull()
+  },
+  (table) => ({
+    sourceItemIdx: uniqueIndex("stock_items_user_source_item_idx").on(table.userId, table.sourceFairItemId)
+  })
+);
+
 export const usersRelations = relations(users, ({ many }) => ({
   ownedFairs: many(fairs),
   fairMemberships: many(fairMembers),
-  productTemplates: many(productTemplates)
+  productTemplates: many(productTemplates),
+  stockItems: many(stockItems)
 }));
 
 export const fairsRelations = relations(fairs, ({ one, many }) => ({
@@ -119,5 +148,20 @@ export const fairItemsRelations = relations(fairItems, ({ one }) => ({
   updatedByUser: one(users, {
     fields: [fairItems.updatedBy],
     references: [users.id]
+  })
+}));
+
+export const stockItemsRelations = relations(stockItems, ({ one }) => ({
+  user: one(users, {
+    fields: [stockItems.userId],
+    references: [users.id]
+  }),
+  sourceFair: one(fairs, {
+    fields: [stockItems.sourceFairId],
+    references: [fairs.id]
+  }),
+  sourceFairItem: one(fairItems, {
+    fields: [stockItems.sourceFairItemId],
+    references: [fairItems.id]
   })
 }));

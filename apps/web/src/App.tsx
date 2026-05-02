@@ -43,6 +43,8 @@ import { playSound } from "./lib/sound";
 import { useAuthStore } from "./state/useAuthStore";
 import { useFairStore } from "./state/useFairStore";
 import type { Fair, FairItem } from "./state/useFairStore";
+import { useStockStore } from "./state/useStockStore";
+import type { StockItem } from "./state/useStockStore";
 import { useThemeStore } from "./state/useThemeStore";
 
 const emptyFair = {
@@ -56,7 +58,7 @@ const emptyFair = {
   memberCount: 0
 };
 
-type View = "feiras" | "minhas-feiras" | "feira" | "produto" | "calendario" | "orcamento" | "perfil";
+type View = "feiras" | "minhas-feiras" | "feira" | "produto" | "calendario" | "orcamento" | "estoque" | "perfil";
 type RealtimeStatus = "online" | "unstable" | "offline";
 type RouteState = {
   view: View;
@@ -79,7 +81,7 @@ function getRouteFromHash(): RouteState {
     return { view: "produto", fairId, itemId };
   }
 
-  if (view === "minhas-feiras" || view === "calendario" || view === "orcamento" || view === "perfil") {
+  if (view === "minhas-feiras" || view === "calendario" || view === "orcamento" || view === "estoque" || view === "perfil") {
     return { view };
   }
 
@@ -109,6 +111,12 @@ function App() {
   const createItem = useFairStore((state) => state.createItem);
   const deleteFair = useFairStore((state) => state.deleteFair);
   const deleteItem = useFairStore((state) => state.deleteItem);
+  const stockItems = useStockStore((state) => state.items);
+  const stockStatus = useStockStore((state) => state.status);
+  const stockError = useStockStore((state) => state.error);
+  const loadStock = useStockStore((state) => state.loadStock);
+  const consumeStockItem = useStockStore((state) => state.consumeItem);
+  const restoreStockItem = useStockStore((state) => state.restoreItem);
   const selectedFair = fairs.find((fair) => fair.id === selectedFairId) ?? fairs[0] ?? emptyFair;
   const latestFairs = useMemo(() => fairs.slice(0, 3), [fairs]);
   const totalItemsCount = useMemo(() => Object.values(itemsByFair).reduce((count, fairItems) => count + fairItems.length, 0), [itemsByFair]);
@@ -119,6 +127,11 @@ function App() {
     theme === "dark"
       ? "/assets/logo/balaio-logo-horizontal-dark.svg"
       : "/assets/logo/balaio-logo-horizontal.svg";
+  const desktopBrandRef = useRef<HTMLImageElement>(null);
+  const mobileBrandRef = useRef<HTMLImageElement>(null);
+  const [fairMenuOpen, setFairMenuOpen] = useState(false);
+  const [bottomTabsHidden, setBottomTabsHidden] = useState(false);
+  const [realtimeStatus, setRealtimeStatus] = useState<RealtimeStatus>(socket.connected ? "online" : "unstable");
 
   useEffect(() => {
     void loadMe();
@@ -127,8 +140,9 @@ function App() {
   useEffect(() => {
     if (authStatus === "authenticated") {
       void loadFairs();
+      void loadStock();
     }
-  }, [authStatus, loadFairs]);
+  }, [authStatus, loadFairs, loadStock]);
 
   useEffect(() => {
     const syncView = () => setRoute(getRouteFromHash());
@@ -151,8 +165,10 @@ function App() {
     socket.connect();
     socket.emit("fair:join", { fairId: selectedFairId });
 
-    setRealtimeStatus(socket.connected ? "online" : "unstable");
-    const refresh = () => void loadFairs();
+    const refresh = () => {
+      void loadFairs();
+      void loadStock();
+    };
     const markOnline = () => setRealtimeStatus("online");
     const markUnstable = () => setRealtimeStatus("unstable");
     const markOffline = () => setRealtimeStatus("offline");
@@ -176,7 +192,7 @@ function App() {
       socket.off("item:updated", refresh);
       socket.off("item:deleted", refresh);
     };
-  }, [authStatus, loadFairs, selectedFairId]);
+  }, [authStatus, loadFairs, loadStock, selectedFairId]);
 
   const totals = useMemo(() => {
     const total = items.reduce((sum, item) => sum + item.totalPrice, 0);
@@ -186,12 +202,6 @@ function App() {
     return { total, remaining, percent };
   }, [items, selectedFair.budget]);
   const routeItem = items.find((item) => item.id === route.itemId) ?? items[0];
-
-  const desktopBrandRef = useRef<HTMLImageElement>(null);
-  const mobileBrandRef = useRef<HTMLImageElement>(null);
-  const [fairMenuOpen, setFairMenuOpen] = useState(false);
-  const [bottomTabsHidden, setBottomTabsHidden] = useState(false);
-  const [realtimeStatus, setRealtimeStatus] = useState<RealtimeStatus>(socket.connected ? "online" : "unstable");
 
   const handleLogoClick = () => {
     triggerHapticDuration(590, 0.65);
@@ -255,10 +265,6 @@ function App() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  useEffect(() => {
-    setBottomTabsHidden(false);
-  }, [view]);
-
   const openLatestFair = () => {
     triggerHaptic("selection");
     const latestFair = fairs[0] ?? selectedFair;
@@ -312,6 +318,10 @@ function App() {
             <Wallet size={19} />
             Orçamento
           </a>
+          <a className={view === "estoque" ? "nav-item active" : "nav-item"} href="#estoque" onClick={() => triggerHaptic("selection")}>
+            <Store size={19} />
+            Estoque
+          </a>
           <a className={view === "perfil" ? "nav-item active" : "nav-item"} href="#perfil" onClick={() => triggerHaptic("selection")}>
             <UserRound size={19} />
             Perfil
@@ -354,6 +364,14 @@ function App() {
             theme={theme}
             toggleTheme={toggleTheme}
             updateProfile={updateProfile}
+          />
+        ) : view === "estoque" ? (
+          <StockPage
+            consumeItem={consumeStockItem}
+            error={stockError}
+            items={stockItems}
+            restoreItem={restoreStockItem}
+            status={stockStatus}
           />
         ) : view === "produto" && routeItem ? (
           <ProductPage
@@ -663,6 +681,10 @@ function App() {
           <Wallet size={22} />
           <span>Orçamento</span>
         </a>
+        <a className={view === "estoque" ? "bottom-tab active" : "bottom-tab"} href="#estoque" onClick={() => triggerHaptic("selection")}>
+          <Store size={22} />
+          <span>Estoque</span>
+        </a>
         <a className={view === "perfil" ? "bottom-tab active" : "bottom-tab"} href="#perfil" onClick={() => triggerHaptic("selection")}>
           <UserRound size={22} />
           <span>Perfil</span>
@@ -711,6 +733,14 @@ type ProfilePageProps = {
   theme: "light" | "dark";
   toggleTheme: () => void;
   updateProfile: (values: { firstName: string; lastName: string; birthDate: string; email: string }) => Promise<void>;
+};
+
+type StockPageProps = {
+  consumeItem: (stockItemId: string) => Promise<void>;
+  error: string;
+  items: StockItem[];
+  restoreItem: (stockItemId: string) => Promise<void>;
+  status: "idle" | "loading" | "ready" | "error";
 };
 
 type UpdateFairItem = (itemId: string, input: Partial<Omit<FairItem, "id" | "fairId" | "totalPrice">>) => Promise<void>;
@@ -2148,6 +2178,103 @@ function ProductPage({ deleteItem, fair, item, onBack, togglePurchased, updateIt
   );
 }
 
+function StockPage({ consumeItem, error, items, restoreItem, status }: StockPageProps) {
+  const [filter, setFilter] = useState<"in_stock" | "consumed">("in_stock");
+  const inStockItems = items.filter((item) => item.status === "in_stock");
+  const consumedItems = items.filter((item) => item.status === "consumed");
+  const visibleItems = filter === "in_stock" ? inStockItems : consumedItems;
+  const totalInStock = inStockItems.reduce((sum, item) => sum + item.totalPrice, 0);
+
+  return (
+    <section className="stock-page" aria-label="Estoque">
+      <header className="stock-header">
+        <div>
+          <small>Produtos comprados</small>
+          <h1>Estoque</h1>
+        </div>
+        <div className="stock-total">
+          <small>Total em estoque</small>
+          <strong>{formatCurrency(totalInStock)}</strong>
+        </div>
+      </header>
+
+      <div className="stock-tabs" role="tablist" aria-label="Status do estoque">
+        <button
+          className={filter === "in_stock" ? "active" : ""}
+          type="button"
+          onClick={() => {
+            triggerHaptic("selection");
+            setFilter("in_stock");
+          }}
+        >
+          Em estoque
+          <span>{inStockItems.length}</span>
+        </button>
+        <button
+          className={filter === "consumed" ? "active" : ""}
+          type="button"
+          onClick={() => {
+            triggerHaptic("selection");
+            setFilter("consumed");
+          }}
+        >
+          Consumidos
+          <span>{consumedItems.length}</span>
+        </button>
+      </div>
+
+      <div className="stock-list">
+        {status === "loading" ? <p className="inline-state">Carregando estoque...</p> : null}
+        {status === "error" ? <p className="inline-state error">{error}</p> : null}
+        {status !== "loading" && visibleItems.length === 0 ? (
+          <div className="stock-empty">
+            <Store size={24} />
+            <strong>{filter === "in_stock" ? "Nada em estoque ainda" : "Nenhum consumido ainda"}</strong>
+            <span>{filter === "in_stock" ? "Marque itens da feira como comprados para aparecerem aqui." : "Itens consumidos ficam preservados aqui."}</span>
+          </div>
+        ) : null}
+        {visibleItems.map((item) => (
+          <StockRow consumeItem={consumeItem} item={item} key={item.id} restoreItem={restoreItem} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function StockRow({ consumeItem, item, restoreItem }: { consumeItem: (stockItemId: string) => Promise<void>; item: StockItem; restoreItem: (stockItemId: string) => Promise<void> }) {
+  const color = getCategoryColor(item.category || item.name, 0);
+  const category = getCategoryMeta(item.category || item.name)?.label ?? (item.category || "Outros");
+
+  return (
+    <article className={item.status === "consumed" ? "stock-row consumed" : "stock-row"} style={{ "--stock-category-color": color } as CSSProperties}>
+      <span className="stock-category-dot" aria-hidden="true" />
+      <div className="stock-row-main">
+        <strong>{item.name}</strong>
+        <span>
+          {category}
+          {item.sourceFairName ? ` · ${item.sourceFairName}` : ""}
+        </span>
+      </div>
+      <div className="stock-row-meta">
+        <strong>
+          {formatQuantity(item.quantity)} {item.unit}
+        </strong>
+        <span>{formatCurrency(item.totalPrice)}</span>
+      </div>
+      <button
+        className={item.status === "consumed" ? "stock-action restore" : "stock-action"}
+        type="button"
+        onClick={() => {
+          triggerHaptic(item.status === "consumed" ? "selection" : "warning");
+          void (item.status === "consumed" ? restoreItem(item.id) : consumeItem(item.id));
+        }}
+      >
+        {item.status === "consumed" ? "Voltar" : "Consumir"}
+      </button>
+    </article>
+  );
+}
+
 type ProfileField = "name" | "email" | "birthDate";
 
 function ProfilePage({ user, fairsCount, itemsCount, logout, theme, toggleTheme, updateProfile }: ProfilePageProps) {
@@ -2632,6 +2759,12 @@ function formatCurrency(value: number) {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL"
+  }).format(value);
+}
+
+function formatQuantity(value: number) {
+  return new Intl.NumberFormat("pt-BR", {
+    maximumFractionDigits: 2
   }).format(value);
 }
 

@@ -3,7 +3,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
 import { getSessionUserId } from "../auth/session.js";
 import { db } from "../db/client.js";
-import { fairItems, fairMembers, fairs } from "../db/schema.js";
+import { fairItems, fairMembers, fairs, stockItems } from "../db/schema.js";
 import { fairRoom, type RealtimeServer } from "../realtime/index.js";
 
 const monthNames = [
@@ -228,6 +228,10 @@ export async function registerFairRoutes(app: FastifyInstance, io: RealtimeServe
       return reply.code(500).send({ message: "Nao foi possivel criar o item." });
     }
 
+    if (item.purchased) {
+      await upsertStockItem(userId, item);
+    }
+
     io.to(fairRoom(params.data.fairId)).emit("item:created", { fairId: params.data.fairId, itemId: item.id });
 
     return reply.code(201).send({ data: toItemDto(item) });
@@ -288,6 +292,10 @@ export async function registerFairRoutes(app: FastifyInstance, io: RealtimeServe
 
     if (!item) {
       return reply.code(404).send({ message: "Item nao encontrado." });
+    }
+
+    if (item.purchased) {
+      await upsertStockItem(userId, item);
     }
 
     io.to(fairRoom(params.data.fairId)).emit("item:updated", { fairId: params.data.fairId, itemId: item.id });
@@ -498,4 +506,31 @@ function toNumber(value: unknown) {
 
 function toDbNumber(value: number) {
   return Number(value || 0).toFixed(2);
+}
+
+async function upsertStockItem(userId: string, item: DbItem) {
+  const values = {
+    userId,
+    sourceFairId: item.fairId,
+    sourceFairItemId: item.id,
+    name: item.name,
+    quantity: item.quantity,
+    unit: item.unit,
+    unitPrice: item.unitPrice,
+    totalPrice: item.totalPrice,
+    category: item.category,
+    notes: item.notes,
+    imageUrl: item.imageUrl,
+    status: "in_stock" as const,
+    consumedAt: null,
+    updatedAt: new Date()
+  };
+
+  await db
+    .insert(stockItems)
+    .values(values)
+    .onConflictDoUpdate({
+      target: [stockItems.userId, stockItems.sourceFairItemId],
+      set: values
+    });
 }

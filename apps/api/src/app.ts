@@ -9,6 +9,7 @@ import { createRealtime } from "./realtime/index.js";
 import { registerAuthRoutes } from "./routes/auth.js";
 import { registerFairRoutes } from "./routes/fairs.js";
 import { registerHealthRoutes } from "./routes/health.js";
+import { registerStockRoutes } from "./routes/stock.js";
 
 type CreateAppOptions = {
   authRepository?: AuthRepository;
@@ -45,6 +46,7 @@ export async function createApp(options: CreateAppOptions = {}) {
   await registerHealthRoutes(app);
   await registerAuthRoutes(app, options.authRepository ?? createDbAuthRepository());
   await registerFairRoutes(app, io);
+  await registerStockRoutes(app);
 
   return { app, io };
 }

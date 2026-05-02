@@ -15,6 +15,13 @@
       "when": 1777591257169,
       "tag": "0001_nebulous_trish_tilby",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1777762494331,
+      "tag": "0002_previous_smasher",
+      "breakpoints": true
     }
   ]
 }
