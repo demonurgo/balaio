@@ -302,7 +302,7 @@ function App() {
             onClick={() => triggerHaptic("selection")}
           >
             <CalendarDays size={19} />
-            Calendario
+            Calendário
           </a>
           <a
             className={view === "orcamento" ? "nav-item active" : "nav-item"}
@@ -310,7 +310,7 @@ function App() {
             onClick={() => triggerHaptic("selection")}
           >
             <Wallet size={19} />
-            Orcamento
+            Orçamento
           </a>
           <a className={view === "perfil" ? "nav-item active" : "nav-item"} href="#perfil" onClick={() => triggerHaptic("selection")}>
             <UserRound size={19} />
@@ -418,7 +418,7 @@ function App() {
                   className="icon-button"
                   type="button"
                   aria-expanded={fairMenuOpen}
-                  aria-label="Mais opcoes"
+                  aria-label="Mais opções"
                   onClick={() => {
                     triggerHaptic("light");
                     setFairMenuOpen((current) => !current);
@@ -613,7 +613,7 @@ function App() {
             </div>
 
             <div className="summary-grid">
-              <Metric label="Orcamento" value={formatCurrency(selectedFair.budget)} icon={<Wallet size={18} />} />
+              <Metric label="Orçamento" value={formatCurrency(selectedFair.budget)} icon={<Wallet size={18} />} />
               <Metric label="Total" value={formatCurrency(totals.total)} icon={<LayoutList size={18} />} />
               <Metric
                 label="Restante"
@@ -643,7 +643,7 @@ function App() {
         )}
       </section>
 
-      <nav className={bottomTabsHidden ? "bottom-tabs hidden" : "bottom-tabs"} aria-label="Navegacao principal">
+      <nav className={bottomTabsHidden ? "bottom-tabs hidden" : "bottom-tabs"} aria-label="Navegação principal">
         <a className={view === "feiras" ? "bottom-tab active" : "bottom-tab"} href="#feiras" onClick={() => triggerHaptic("selection")}>
           <LayoutList size={22} />
           <span>Dashboard</span>
@@ -661,7 +661,7 @@ function App() {
         </a>
         <a className={view === "orcamento" ? "bottom-tab active" : "bottom-tab"} href="#orcamento" onClick={() => triggerHaptic("selection")}>
           <Wallet size={22} />
-          <span>Orcamento</span>
+          <span>Orçamento</span>
         </a>
         <a className={view === "perfil" ? "bottom-tab active" : "bottom-tab"} href="#perfil" onClick={() => triggerHaptic("selection")}>
           <UserRound size={22} />
@@ -1273,7 +1273,7 @@ function FairPage({ deleteFair, deleteItem, fair, items, createItem, onBack, onO
     realtimeStatus === "online"
       ? "Tempo real ativo"
       : realtimeStatus === "unstable"
-        ? "Conexao instavel"
+        ? "Conexão instável"
         : "Tempo real offline";
 
   return (
@@ -1337,7 +1337,7 @@ function FairPage({ deleteFair, deleteItem, fair, items, createItem, onBack, onO
               className="icon-button fair-menu-button"
               type="button"
               aria-expanded={fairActionsOpen}
-              aria-label="Mais opcoes"
+              aria-label="Mais opções"
               onClick={() => {
                 triggerHaptic("light");
                 setFairActionsOpen((current) => !current);
@@ -1355,10 +1355,10 @@ function FairPage({ deleteFair, deleteItem, fair, items, createItem, onBack, onO
                   Ordenar por categoria
                 </button>
                 <button className={itemSortMode === "priceAsc" ? "active" : ""} type="button" onClick={() => changeSortMode("priceAsc")}>
-                  Menor preco
+                  Menor preço
                 </button>
                 <button className={itemSortMode === "priceDesc" ? "active" : ""} type="button" onClick={() => changeSortMode("priceDesc")}>
-                  Maior preco
+                  Maior preço
                 </button>
                 <button className="danger" type="button" onClick={() => void deleteCurrentFair()}>
                   Excluir feira
@@ -1371,7 +1371,7 @@ function FairPage({ deleteFair, deleteItem, fair, items, createItem, onBack, onO
 
       <div className="fair-total-line" aria-label="Resumo da feira">
         <span>
-          <small>Orcamento</small>
+          <small>Orçamento</small>
           {editingBudget ? (
             <input
               autoFocus
@@ -1524,7 +1524,7 @@ function CategoryRingChart({ categories, total }: { categories: CategoryBreakdow
   const displayedCategory = activeCategory ?? leading;
 
   return (
-    <section className="category-ring-card" aria-label="Distribuicao por categoria">
+    <section className="category-ring-card" aria-label="Distribuição por categoria">
       <div className="category-ring-copy">
         <small>Categorias</small>
         <strong>{categories.length ? `${leading.percent}% ${leading.label}` : "Sem categorias"}</strong>
@@ -2119,7 +2119,7 @@ function ProductPage({ deleteItem, fair, item, onBack, togglePurchased, updateIt
         <label className="product-field">
           <span>
             <StickyNote size={14} />
-            Observacoes
+            Observações
           </span>
           <textarea value={draft.notes} onChange={(event) => setDraft((current) => ({ ...current, notes: event.target.value }))} />
         </label>
@@ -2590,7 +2590,7 @@ function MiniTrendChart({ fairs, selectedIndex, onSelect }: MiniTrendChartProps)
   };
 
   return (
-    <svg className="trend-chart" viewBox="0 0 160 56" role="img" aria-label="Evolucao de gastos">
+    <svg className="trend-chart" viewBox="0 0 160 56" role="img" aria-label="Evolução de gastos">
       <polyline className="trend-line" points={polyline} />
       {points.map((point, index) => (
         <g
