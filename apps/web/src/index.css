@@ -1049,10 +1049,10 @@ h2 {
   min-height: 28px;
   max-width: 138px;
   padding: 0 10px;
-  border: 1px solid color-mix(in srgb, var(--tooltip-color) 42%, var(--color-border));
+  border: 1px solid color-mix(in srgb, var(--tooltip-color) 62%, var(--color-bg));
   border-radius: 999px;
   color: var(--color-text);
-  background: color-mix(in srgb, var(--color-bg) 88%, white);
+  background: color-mix(in srgb, var(--tooltip-color) 42%, var(--color-bg));
   box-shadow: 0 10px 26px rgba(20, 38, 31, 0.14);
   pointer-events: none;
   transform: translate(-50%, calc(-100% - 16px));
@@ -1064,9 +1064,9 @@ h2 {
   left: 50%;
   width: 9px;
   height: 9px;
-  border-right: 1px solid color-mix(in srgb, var(--tooltip-color) 42%, var(--color-border));
-  border-bottom: 1px solid color-mix(in srgb, var(--tooltip-color) 42%, var(--color-border));
-  background: color-mix(in srgb, var(--color-bg) 88%, white);
+  border-right: 1px solid color-mix(in srgb, var(--tooltip-color) 62%, var(--color-bg));
+  border-bottom: 1px solid color-mix(in srgb, var(--tooltip-color) 62%, var(--color-bg));
+  background: color-mix(in srgb, var(--tooltip-color) 42%, var(--color-bg));
   content: "";
   transform: translateX(-50%) rotate(45deg);
 }
