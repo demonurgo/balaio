@@ -1318,6 +1318,14 @@ h2 {
   background: linear-gradient(90deg, transparent 0%, var(--color-danger) 50%, var(--color-danger) 100%);
 }
 
+.stock-swipe-shell {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.stock-swipe-shell .todo-delete-action {
+  border-radius: 0;
+}
+
 .todo-item {
   position: relative;
   z-index: 1;
@@ -1691,6 +1699,11 @@ h2 {
   font-weight: 800;
 }
 
+.product-delete.restore {
+  border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
+  color: var(--color-primary);
+}
+
 .stock-header {
   display: grid;
   grid-template-columns: 46px minmax(0, 1fr) auto 32px;
@@ -1837,12 +1850,26 @@ h2 {
 }
 
 .stock-row {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 10px;
   padding: 13px 0;
-  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg);
+  touch-action: pan-y;
+  transition: transform 140ms ease, opacity 140ms ease;
+  will-change: transform;
+}
+
+.stock-row.swiping {
+  transition: none;
+}
+
+.stock-row.removing {
+  opacity: 0;
+  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1), opacity 140ms ease;
 }
 
 .stock-row.consumed {

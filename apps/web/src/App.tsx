@@ -59,7 +59,7 @@ const emptyFair = {
   memberCount: 0
 };
 
-type View = "feiras" | "minhas-feiras" | "feira" | "produto" | "calendario" | "orcamento" | "estoque" | "perfil";
+type View = "feiras" | "minhas-feiras" | "feira" | "produto" | "calendario" | "orcamento" | "estoque" | "estoque-produto" | "perfil";
 type RealtimeStatus = "online" | "unstable" | "offline";
 type RouteState = {
   view: View;
@@ -80,6 +80,10 @@ function getRouteFromHash(): RouteState {
 
   if (view === "produto" && fairId && itemId) {
     return { view: "produto", fairId, itemId };
+  }
+
+  if (view === "estoque" && fairId === "produto" && itemId) {
+    return { view: "estoque-produto", itemId };
   }
 
   if (view === "minhas-feiras" || view === "calendario" || view === "orcamento" || view === "estoque" || view === "perfil") {
@@ -116,6 +120,7 @@ function App() {
   const stockStatus = useStockStore((state) => state.status);
   const stockError = useStockStore((state) => state.error);
   const loadStock = useStockStore((state) => state.loadStock);
+  const updateStockItem = useStockStore((state) => state.updateItem);
   const consumeStockItem = useStockStore((state) => state.consumeItem);
   const restoreStockItem = useStockStore((state) => state.restoreItem);
   const selectedFair = fairs.find((fair) => fair.id === selectedFairId) ?? fairs[0] ?? emptyFair;
@@ -205,6 +210,7 @@ function App() {
     return { total, remaining, percent };
   }, [items, selectedFair.budget]);
   const routeItem = items.find((item) => item.id === route.itemId) ?? items[0];
+  const routeStockItem = stockItems.find((item) => item.id === route.itemId);
 
   const handleLogoClick = () => {
     triggerHapticDuration(590, 0.65);
@@ -368,11 +374,27 @@ function App() {
             toggleTheme={toggleTheme}
             updateProfile={updateProfile}
           />
+        ) : view === "estoque-produto" && routeStockItem ? (
+          <StockProductPage
+            consumeItem={consumeStockItem}
+            item={routeStockItem}
+            key={routeStockItem.id}
+            onBack={() => {
+              triggerHaptic("light");
+              window.location.hash = "estoque";
+            }}
+            restoreItem={restoreStockItem}
+            updateItem={updateStockItem}
+          />
         ) : view === "estoque" ? (
           <StockPage
             consumeItem={consumeStockItem}
             error={stockError}
             items={stockItems}
+            onOpenProduct={(stockItemId) => {
+              triggerHaptic("selection");
+              window.location.hash = `estoque/produto/${stockItemId}`;
+            }}
             restoreItem={restoreStockItem}
             status={stockStatus}
           />
@@ -680,7 +702,7 @@ function App() {
           <ShoppingBasket size={22} />
           <span>Feiras</span>
         </a>
-        <a className={view === "estoque" ? "bottom-tab active" : "bottom-tab"} href="#estoque" onClick={() => triggerHaptic("selection")}>
+        <a className={view === "estoque" || view === "estoque-produto" ? "bottom-tab active" : "bottom-tab"} href="#estoque" onClick={() => triggerHaptic("selection")}>
           <Store size={22} />
           <span>Estoque</span>
         </a>
@@ -738,8 +760,17 @@ type StockPageProps = {
   consumeItem: (stockItemId: string) => Promise<void>;
   error: string;
   items: StockItem[];
+  onOpenProduct: (stockItemId: string) => void;
   restoreItem: (stockItemId: string) => Promise<void>;
   status: "idle" | "loading" | "ready" | "error";
+};
+
+type StockProductPageProps = {
+  consumeItem: (stockItemId: string) => Promise<void>;
+  item: StockItem;
+  onBack: () => void;
+  restoreItem: (stockItemId: string) => Promise<void>;
+  updateItem: (stockItemId: string, input: Partial<Pick<StockItem, "name" | "quantity" | "unit" | "unitPrice" | "category" | "notes" | "imageUrl">>) => Promise<void>;
 };
 
 type UpdateFairItem = (itemId: string, input: Partial<Omit<FairItem, "id" | "fairId" | "totalPrice">>) => Promise<void>;
@@ -2175,6 +2206,154 @@ function ProductPage({ deleteItem, fair, item, onBack, togglePurchased, updateIt
   );
 }
 
+function StockProductPage({ consumeItem, item, onBack, restoreItem, updateItem }: StockProductPageProps) {
+  const categoryOptions = useMemo(() => {
+    const currentCategory = item.category?.trim();
+
+    if (currentCategory && !CATEGORY_OPTIONS.some((category) => normalizeCategoryLabel(category) === normalizeCategoryLabel(currentCategory))) {
+      return [...CATEGORY_OPTIONS, currentCategory];
+    }
+
+    return CATEGORY_OPTIONS;
+  }, [item.category]);
+  const [draft, setDraft] = useState({
+    name: item.name,
+    price: String(item.unitPrice).replace(".", ","),
+    quantity: String(item.quantity).replace(".", ","),
+    category: item.category ?? "",
+    notes: item.notes ?? ""
+  });
+  const [backPressed, setBackPressed] = useState(false);
+
+  const handleBack = () => {
+    if (backPressed) {
+      return;
+    }
+
+    triggerHaptic("selection");
+    setBackPressed(true);
+    window.setTimeout(onBack, 140);
+  };
+
+  const saveProduct = async () => {
+    await updateItem(item.id, {
+      name: draft.name.trim() || item.name,
+      unitPrice: parseMoneyInput(draft.price),
+      quantity: parseDecimalQuantityInput(draft.quantity),
+      category: draft.category.trim(),
+      notes: draft.notes.trim()
+    });
+    triggerHaptic("success");
+  };
+
+  const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.currentTarget.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      void updateItem(item.id, { imageUrl: String(reader.result ?? "") });
+      triggerHaptic("success");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  return (
+    <section className="product-screen" aria-label={`Produto em estoque ${item.name}`}>
+      <header className="product-header stock-product-header">
+        <button className={backPressed ? "icon-button screen-back-button is-leaving" : "icon-button screen-back-button"} type="button" aria-label="Voltar" onClick={handleBack}>
+          <ArrowLeft size={19} />
+        </button>
+        <div>
+          <small>Estoque</small>
+          <h1>Produto</h1>
+        </div>
+      </header>
+
+      <label className={item.imageUrl ? "product-image filled" : "product-image"}>
+        {item.imageUrl ? <img src={item.imageUrl} alt="" /> : <ImagePlus size={28} />}
+        <span>{item.imageUrl ? "Trocar imagem" : "Adicionar imagem"}</span>
+        <input accept="image/*" type="file" onChange={handleImageChange} />
+      </label>
+
+      <div className="product-form">
+        <label className="product-field large">
+          <span>Nome</span>
+          <input value={draft.name} onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))} />
+        </label>
+
+        <div className="product-field-grid">
+          <label className="product-field">
+            <span>Preço</span>
+            <input inputMode="decimal" value={draft.price} onChange={(event) => setDraft((current) => ({ ...current, price: event.target.value }))} />
+          </label>
+          <label className="product-field">
+            <span>Qtd.</span>
+            <span className="qty-stepper">
+              <button
+                type="button"
+                onClick={() => setDraft((current) => ({ ...current, quantity: String(Math.max(0.01, parseDecimalQuantityInput(current.quantity) - 1)).replace(".", ",") }))}
+              >
+                <Minus size={14} />
+              </button>
+              <input inputMode="decimal" value={draft.quantity} onChange={(event) => setDraft((current) => ({ ...current, quantity: event.target.value }))} />
+              <button
+                type="button"
+                onClick={() => setDraft((current) => ({ ...current, quantity: String(parseDecimalQuantityInput(current.quantity) + 1).replace(".", ",") }))}
+              >
+                <Plus size={14} />
+              </button>
+            </span>
+          </label>
+        </div>
+
+        <label className="product-field">
+          <span>
+            <Tag size={14} />
+            Categoria
+          </span>
+          <select value={draft.category || "Outros"} onChange={(event) => setDraft((current) => ({ ...current, category: event.target.value }))}>
+            {categoryOptions.map((category) => (
+              <option key={category} value={category}>
+                {category}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="product-field">
+          <span>
+            <StickyNote size={14} />
+            Observações
+          </span>
+          <textarea value={draft.notes} onChange={(event) => setDraft((current) => ({ ...current, notes: event.target.value }))} />
+        </label>
+      </div>
+
+      <div className="product-actions">
+        <button className="product-save" type="button" onClick={() => void saveProduct()}>
+          <Check size={17} />
+          Salvar
+        </button>
+        <button
+          className={item.status === "consumed" ? "product-delete restore" : "product-delete"}
+          type="button"
+          onClick={() => {
+            triggerHaptic(item.status === "consumed" ? "selection" : "warning");
+            void (item.status === "consumed" ? restoreItem(item.id) : consumeItem(item.id)).then(onBack);
+          }}
+        >
+          {item.status === "consumed" ? <Check size={17} /> : <Trash2 size={17} />}
+          {item.status === "consumed" ? "Voltar" : "Consumir"}
+        </button>
+      </div>
+    </section>
+  );
+}
+
 type StockCategoryBreakdownItem = ReturnType<typeof getStockCategoryBreakdown>["categories"][number];
 
 function StockCategoryRingChart({ categories }: { categories: StockCategoryBreakdownItem[]; total: number }) {
@@ -2270,7 +2449,7 @@ function getStockCategoryBreakdown(items: StockItem[]) {
   return { categories, total };
 }
 
-function StockPage({ consumeItem, error, items, restoreItem, status }: StockPageProps) {
+function StockPage({ consumeItem, error, items, onOpenProduct, restoreItem, status }: StockPageProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [showConsumed, setShowConsumed] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -2374,7 +2553,7 @@ function StockPage({ consumeItem, error, items, restoreItem, status }: StockPage
           </div>
         ) : null}
         {visibleItems.map((item) => (
-          <StockRow consumeItem={consumeItem} item={item} key={item.id} restoreItem={restoreItem} />
+          <StockRow consumeItem={consumeItem} item={item} key={item.id} onOpenDetail={() => onOpenProduct(item.id)} restoreItem={restoreItem} />
         ))}
       </div>
 
@@ -2393,7 +2572,7 @@ function StockPage({ consumeItem, error, items, restoreItem, status }: StockPage
               </div>
             ) : null}
             {consumedItems.map((item) => (
-              <StockRow consumeItem={consumeItem} item={item} key={item.id} restoreItem={restoreItem} />
+              <StockRow consumeItem={consumeItem} item={item} key={item.id} onOpenDetail={() => onOpenProduct(item.id)} restoreItem={restoreItem} />
             ))}
           </div>
         </section>
@@ -2402,51 +2581,335 @@ function StockPage({ consumeItem, error, items, restoreItem, status }: StockPage
   );
 }
 
-function StockRow({ consumeItem, item, restoreItem }: { consumeItem: (stockItemId: string) => Promise<void>; item: StockItem; restoreItem: (stockItemId: string) => Promise<void> }) {
+function StockRow({
+  consumeItem,
+  item,
+  onOpenDetail,
+  restoreItem
+}: {
+  consumeItem: (stockItemId: string) => Promise<void>;
+  item: StockItem;
+  onOpenDetail: () => void;
+  restoreItem: (stockItemId: string) => Promise<void>;
+}) {
+  const [swipeX, setSwipeX] = useState(0);
+  const [isSwiping, setIsSwiping] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
+  const [swipeArmed, setSwipeArmed] = useState(false);
+  const pressTimer = useRef<number | null>(null);
+  const longPressFired = useRef(false);
+  const swipe = useRef<SwipeState | null>(null);
+  const swipeElement = useRef<HTMLDivElement | null>(null);
+  const detachGlobalSwipe = useRef<(() => void) | null>(null);
+  const suppressClick = useRef(false);
+  const suppressClickTimer = useRef<number | null>(null);
   const color = getCategoryColor(item.category || item.name, 0);
   const category = getCategoryMeta(item.category || item.name)?.label ?? (item.category || "Outros");
 
+  useEffect(() => {
+    return () => {
+      detachGlobalSwipe.current?.();
+    };
+  }, []);
+
+  const clearPress = () => {
+    if (pressTimer.current) {
+      window.clearTimeout(pressTimer.current);
+      pressTimer.current = null;
+    }
+  };
+
+  const suppressNextClick = () => {
+    suppressClick.current = true;
+
+    if (suppressClickTimer.current) {
+      window.clearTimeout(suppressClickTimer.current);
+    }
+
+    suppressClickTimer.current = window.setTimeout(() => {
+      suppressClick.current = false;
+      suppressClickTimer.current = null;
+    }, 360);
+  };
+
+  function detachSwipeRelease() {
+    detachGlobalSwipe.current?.();
+    detachGlobalSwipe.current = null;
+  }
+
+  function releaseSwipePointer(pointerId: number) {
+    const element = swipeElement.current;
+
+    if (element?.hasPointerCapture(pointerId)) {
+      element.releasePointerCapture(pointerId);
+    }
+
+    swipeElement.current = null;
+  }
+
+  function attachSwipeRelease(element: HTMLDivElement) {
+    detachSwipeRelease();
+    swipeElement.current = element;
+
+    const finish = (event: globalThis.PointerEvent) => {
+      finishSwipe(event.pointerId, event);
+    };
+
+    window.addEventListener("pointerup", finish, { capture: true });
+    window.addEventListener("pointercancel", finish, { capture: true });
+    detachGlobalSwipe.current = () => {
+      window.removeEventListener("pointerup", finish, { capture: true });
+      window.removeEventListener("pointercancel", finish, { capture: true });
+    };
+  }
+
+  const startPointer = (event: PointerEvent<HTMLDivElement>) => {
+    if ((event.pointerType === "mouse" && event.button !== 0) || isRemoving) {
+      return;
+    }
+
+    swipe.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      rawX: 0,
+      visualX: 0,
+      lock: null,
+      armed: false
+    };
+
+    if ((event.target as HTMLElement).closest(".stock-check, .stock-action")) {
+      return;
+    }
+
+    clearPress();
+    longPressFired.current = false;
+    pressTimer.current = window.setTimeout(() => {
+      longPressFired.current = true;
+      triggerHaptic("medium");
+      onOpenDetail();
+    }, 520);
+  };
+
+  const movePointer = (event: PointerEvent<HTMLDivElement>) => {
+    const currentSwipe = swipe.current;
+
+    if (!currentSwipe || currentSwipe.pointerId !== event.pointerId || item.status === "consumed") {
+      return;
+    }
+
+    const deltaX = event.clientX - currentSwipe.startX;
+    const deltaY = event.clientY - currentSwipe.startY;
+    const absX = Math.abs(deltaX);
+    const absY = Math.abs(deltaY);
+
+    if (!currentSwipe.lock) {
+      if (absX < SWIPE_START_DISTANCE && absY < SWIPE_START_DISTANCE) {
+        return;
+      }
+
+      if (absY > absX * 1.15) {
+        currentSwipe.lock = "scroll";
+        clearPress();
+        return;
+      }
+
+      if (deltaX < -SWIPE_START_DISTANCE) {
+        currentSwipe.lock = "swipe";
+        event.currentTarget.setPointerCapture(event.pointerId);
+        attachSwipeRelease(event.currentTarget);
+        clearPress();
+        setIsSwiping(true);
+        suppressNextClick();
+        triggerHaptic("selection");
+      } else {
+        currentSwipe.lock = "scroll";
+        clearPress();
+        return;
+      }
+    }
+
+    if (currentSwipe.lock !== "swipe") {
+      return;
+    }
+
+    event.preventDefault();
+
+    const distance = Math.max(0, -deltaX);
+    const nextSwipeX = getResistedSwipe(distance);
+    const nextArmed = distance >= SWIPE_DELETE_DISTANCE;
+
+    currentSwipe.rawX = distance;
+    currentSwipe.visualX = Math.abs(nextSwipeX);
+    setSwipeX(nextSwipeX);
+
+    if (nextArmed !== currentSwipe.armed) {
+      currentSwipe.armed = nextArmed;
+      setSwipeArmed(nextArmed);
+      triggerHaptic(nextArmed ? "medium" : "light");
+    }
+  };
+
+  const resetSwipe = () => {
+    swipe.current = null;
+    detachSwipeRelease();
+    clearPress();
+    setIsSwiping(false);
+    setSwipeArmed(false);
+    setSwipeX(0);
+  };
+
+  const consumeFromSwipe = () => {
+    const exitDistance = -Math.min(window.innerWidth || 360, 520);
+
+    swipe.current = null;
+    detachSwipeRelease();
+    clearPress();
+    setIsSwiping(false);
+    setSwipeArmed(true);
+    setIsRemoving(true);
+    setSwipeX(exitDistance);
+    triggerHaptic("error");
+
+    window.setTimeout(() => {
+      void consumeItem(item.id).catch(() => {
+        setIsRemoving(false);
+        setSwipeArmed(false);
+        setSwipeX(0);
+        triggerHaptic("warning");
+      });
+    }, 150);
+  };
+
+  const shouldConsumeSwipe = (currentSwipe: SwipeState) => {
+    return currentSwipe.armed || currentSwipe.rawX >= SWIPE_DELETE_DISTANCE || currentSwipe.visualX >= SWIPE_REVEAL_DISTANCE * 0.9;
+  };
+
+  function finishSwipe(pointerId: number, event?: { preventDefault: () => void }) {
+    const currentSwipe = swipe.current;
+
+    if (!currentSwipe || currentSwipe.pointerId !== pointerId) {
+      clearPress();
+      return;
+    }
+
+    swipe.current = null;
+    releaseSwipePointer(pointerId);
+    detachSwipeRelease();
+    clearPress();
+
+    if (currentSwipe.lock !== "swipe") {
+      setSwipeX(0);
+      setSwipeArmed(false);
+      return;
+    }
+
+    event?.preventDefault();
+    suppressNextClick();
+
+    if (shouldConsumeSwipe(currentSwipe)) {
+      consumeFromSwipe();
+      return;
+    }
+
+    setIsSwiping(false);
+    setSwipeArmed(false);
+    setSwipeX(0);
+  }
+
+  const cancelPointer = (event: PointerEvent<HTMLDivElement>) => {
+    const currentSwipe = swipe.current;
+
+    if (currentSwipe?.lock === "swipe" && shouldConsumeSwipe(currentSwipe)) {
+      releaseSwipePointer(event.pointerId);
+      consumeFromSwipe();
+      return;
+    }
+
+    resetSwipe();
+  };
+
+  const stopSuppressedClick = (event: MouseEvent<HTMLDivElement>) => {
+    if (!suppressClick.current) {
+      return;
+    }
+
+    suppressClick.current = false;
+    if (suppressClickTimer.current) {
+      window.clearTimeout(suppressClickTimer.current);
+      suppressClickTimer.current = null;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+  };
+
+  const stockSwipeStyle =
+    swipeX !== 0 || isSwiping || isRemoving
+      ? ({ transform: `translate3d(${swipeX}px, 0, 0)` } as CSSProperties)
+      : undefined;
+
   return (
-    <article className={item.status === "consumed" ? "stock-row consumed" : "stock-row"} style={{ "--stock-category-color": color } as CSSProperties}>
-      <button
-        className={item.status === "consumed" ? "stock-check consumed" : "stock-check"}
-        type="button"
-        aria-label={item.status === "consumed" ? "Restaurar item" : "Consumir item"}
-        onClick={() => {
-          triggerHaptic(item.status === "consumed" ? "selection" : "warning");
-          void (item.status === "consumed" ? restoreItem(item.id) : consumeItem(item.id));
+    <div className={swipeArmed ? "todo-swipe-shell stock-swipe-shell armed" : "todo-swipe-shell stock-swipe-shell"} style={{ "--swipe-progress": String(Math.min(Math.abs(swipeX) / SWIPE_REVEAL_DISTANCE, 1)) } as CSSProperties}>
+      {item.status === "in_stock" ? (
+        <div className="todo-delete-action stock-delete-action" aria-hidden="true">
+          <Trash2 size={18} />
+          <span>Consumir</span>
+        </div>
+      ) : null}
+      <article
+        className={`${item.status === "consumed" ? "stock-row consumed" : "stock-row"}${isSwiping ? " swiping" : ""}${isRemoving ? " removing" : ""}`}
+        style={{ ...({ "--stock-category-color": color } as CSSProperties), ...stockSwipeStyle }}
+        onClickCapture={stopSuppressedClick}
+        onPointerCancel={cancelPointer}
+        onPointerDown={startPointer}
+        onPointerLeave={() => {
+          if (swipe.current?.lock !== "swipe") {
+            clearPress();
+          }
         }}
+        onPointerMove={movePointer}
+        onPointerUp={(event) => finishSwipe(event.pointerId, event)}
       >
-        {item.status === "consumed" ? <Check size={14} /> : null}
-      </button>
-      <div className="stock-row-main">
-        <strong>{item.name}</strong>
-        <span>
-          {category}
-          {item.sourceFairName ? ` · ${item.sourceFairName}` : ""}
-          {item.status === "consumed" && item.consumedByName ? ` · consumido por ${item.consumedByName}` : ""}
-          {item.status === "consumed" && item.consumedAt ? ` · ${formatDateTime(item.consumedAt)}` : ""}
-        </span>
-      </div>
-      <div className="stock-row-meta">
-        <strong>
-          {formatQuantity(item.quantity)} {item.unit}
-        </strong>
-        <span>{formatCurrency(item.totalPrice)}</span>
-      </div>
-      {item.status === "consumed" ? (
         <button
-          className="stock-action restore"
+          className={item.status === "consumed" ? "stock-check consumed" : "stock-check"}
           type="button"
+          aria-label={item.status === "consumed" ? "Restaurar item" : "Consumir item"}
           onClick={() => {
-            triggerHaptic("selection");
-            void restoreItem(item.id);
+            triggerHaptic(item.status === "consumed" ? "selection" : "warning");
+            void (item.status === "consumed" ? restoreItem(item.id) : consumeItem(item.id));
           }}
         >
-          Voltar
+          {item.status === "consumed" ? <Check size={14} /> : null}
         </button>
-      ) : null}
-    </article>
+        <div className="stock-row-main">
+          <strong>{item.name}</strong>
+          <span>
+            {category}
+            {item.sourceFairName ? ` · ${item.sourceFairName}` : ""}
+            {item.status === "consumed" && item.consumedByName ? ` · consumido por ${item.consumedByName}` : ""}
+            {item.status === "consumed" && item.consumedAt ? ` · ${formatDateTime(item.consumedAt)}` : ""}
+          </span>
+        </div>
+        <div className="stock-row-meta">
+          <strong>
+            {formatQuantity(item.quantity)} {item.unit}
+          </strong>
+          <span>{formatCurrency(item.totalPrice)}</span>
+        </div>
+        {item.status === "consumed" ? (
+          <button
+            className="stock-action restore"
+            type="button"
+            onClick={() => {
+              triggerHaptic("selection");
+              void restoreItem(item.id);
+            }}
+          >
+            Voltar
+          </button>
+        ) : null}
+      </article>
+    </div>
   );
 }
 
@@ -2978,6 +3441,16 @@ function parseQuantityInput(value: string) {
   }
 
   return Math.max(1, parsed);
+}
+
+function parseDecimalQuantityInput(value: string) {
+  const parsed = parseMoneyInput(value);
+
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return 1;
+  }
+
+  return parsed;
 }
 
 function getNextFairDate(current?: Pick<Fair, "month" | "year">) {

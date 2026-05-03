@@ -27,6 +27,12 @@ export function getStock() {
   return apiGet<{ data: StockItemDto[] }>("/api/stock");
 }
 
+export type StockItemPatch = Partial<Pick<StockItemDto, "name" | "quantity" | "unit" | "unitPrice" | "category" | "notes" | "imageUrl">>;
+
+export function updateStockItem(stockItemId: string, values: StockItemPatch) {
+  return apiPatch<{ data: StockItemDto }>(`/api/stock/${stockItemId}`, values);
+}
+
 export function consumeStockItem(stockItemId: string) {
   return apiPatch<{ data: StockItemDto }>(`/api/stock/${stockItemId}/consume`, {});
 }

@@ -28,6 +28,7 @@ type StockState = {
   error: string;
   items: StockItem[];
   loadStock: () => Promise<void>;
+  updateItem: (stockItemId: string, input: stockApi.StockItemPatch) => Promise<void>;
   consumeItem: (stockItemId: string) => Promise<void>;
   restoreItem: (stockItemId: string) => Promise<void>;
 };
@@ -46,6 +47,15 @@ export const useStockStore = create<StockState>((set) => ({
     } catch (error) {
       set({ status: "error", error: getErrorMessage(error) });
     }
+  },
+
+  updateItem: async (stockItemId, input) => {
+    const response = await stockApi.updateStockItem(stockItemId, input);
+    const item = mapStockItem(response.data);
+
+    set((state) => ({
+      items: state.items.map((current) => (current.id === item.id ? item : current))
+    }));
   },
 
   consumeItem: async (stockItemId) => {
