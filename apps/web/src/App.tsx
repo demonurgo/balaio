@@ -1603,20 +1603,22 @@ function CategoryRingChart({ categories, total }: { categories: CategoryBreakdow
                   setActiveCategory((current) => (current?.label === category.label ? null : category));
                 }}
               >
-                <circle
-                  className="category-ring-segment"
-                  cx="110"
-                  cy="110"
-                  r={radius}
-                  stroke={category.color}
-                  strokeDasharray={`${dash} ${circumference - dash}`}
-                  strokeDashoffset={strokeDashoffset}
-                />
-                <foreignObject height="26" width="26" x={iconX - 13} y={iconY - 13}>
-                  <span className="category-ring-icon" style={{ backgroundColor: category.color }}>
-                    <Icon size={14} />
-                  </span>
-                </foreignObject>
+                <g className="category-ring-motion">
+                  <circle
+                    className="category-ring-segment"
+                    cx="110"
+                    cy="110"
+                    r={radius}
+                    stroke={category.color}
+                    strokeDasharray={`${dash} ${circumference - dash}`}
+                    strokeDashoffset={strokeDashoffset}
+                  />
+                  <foreignObject height="26" width="26" x={iconX - 13} y={iconY - 13}>
+                    <span className="category-ring-icon" style={{ backgroundColor: category.color }}>
+                      <Icon size={14} />
+                    </span>
+                  </foreignObject>
+                </g>
               </g>
             );
           })}
@@ -2397,20 +2399,22 @@ function StockCategoryRingChart({ categories }: { categories: StockCategoryBreak
                   setActiveCategory((current) => (current?.label === category.label ? null : category));
                 }}
               >
-                <circle
-                  className="category-ring-segment"
-                  cx="110"
-                  cy="110"
-                  r={radius}
-                  stroke={category.color}
-                  strokeDasharray={`${dash} ${circumference - dash}`}
-                  strokeDashoffset={-offset}
-                />
-                <foreignObject height="26" width="26" x={iconX - 13} y={iconY - 13}>
-                  <span className="category-ring-icon" style={{ backgroundColor: category.color }}>
-                    <Icon size={14} />
-                  </span>
-                </foreignObject>
+                <g className="category-ring-motion">
+                  <circle
+                    className="category-ring-segment"
+                    cx="110"
+                    cy="110"
+                    r={radius}
+                    stroke={category.color}
+                    strokeDasharray={`${dash} ${circumference - dash}`}
+                    strokeDashoffset={-offset}
+                  />
+                  <foreignObject height="26" width="26" x={iconX - 13} y={iconY - 13}>
+                    <span className="category-ring-icon" style={{ backgroundColor: category.color }}>
+                      <Icon size={14} />
+                    </span>
+                  </foreignObject>
+                </g>
               </g>
             );
           })}
