@@ -778,7 +778,7 @@ type StockProductPageProps = {
 };
 
 type UpdateFairItem = (itemId: string, input: Partial<Omit<FairItem, "id" | "fairId" | "totalPrice">>) => Promise<void>;
-type CreateFairItem = (fairId: string, input: { name: string; quantity?: number; unitPrice?: number; unit?: string }) => Promise<void>;
+type CreateFairItem = (fairId: string, input: { category?: string | null; name: string; quantity?: number; unitPrice?: number; unit?: string }) => Promise<void>;
 type UpdateFair = (fairId: string, input: Partial<Pick<Fair, "name" | "month" | "year" | "budget">>) => Promise<void>;
 
 type FairPageProps = {
@@ -1257,11 +1257,14 @@ function FairPage({ deleteFair, deleteItem, fair, items, createItem, onBack, onO
   const [budgetDraft, setBudgetDraft] = useState(String(fair.budget).replace(".", ","));
   const [nameDraft, setNameDraft] = useState(fair.name);
   const [showNewItem, setShowNewItem] = useState(false);
-  const [newItem, setNewItem] = useState({ name: "", price: "", quantity: "1" });
+  const [newItem, setNewItem] = useState({ category: "Outros", name: "", price: "", quantity: "1" });
+  const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [backPressed, setBackPressed] = useState(false);
   const [fairActionsOpen, setFairActionsOpen] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
+  const selectedNewItemCategory = getCategoryMeta(newItem.category) ?? CATEGORY_META[CATEGORY_META.length - 1];
+  const SelectedNewItemIcon = selectedNewItemCategory.icon;
 
   const handleBack = () => {
     if (backPressed) {
@@ -1304,9 +1307,11 @@ function FairPage({ deleteFair, deleteItem, fair, items, createItem, onBack, onO
     await createItem(fair.id, {
       name,
       quantity: parseQuantityInput(newItem.quantity),
-      unitPrice: parseMoneyInput(newItem.price)
+      unitPrice: parseMoneyInput(newItem.price),
+      category: selectedNewItemCategory.label
     });
-    setNewItem({ name: "", price: "", quantity: "1" });
+    setNewItem({ category: "Outros", name: "", price: "", quantity: "1" });
+    setCategoryPickerOpen(false);
     setShowNewItem(false);
     setSaving(false);
     triggerHaptic("success");
@@ -1487,19 +1492,62 @@ function FairPage({ deleteFair, deleteItem, fair, items, createItem, onBack, onO
             void saveNewItem();
           }}
         >
+          <span className="new-item-category-wrap">
+            <button
+              className="new-item-category-button"
+              type="button"
+              aria-expanded={categoryPickerOpen}
+              aria-label={`Categoria ${selectedNewItemCategory.label}`}
+              style={{ "--new-item-category-color": selectedNewItemCategory.color } as CSSProperties}
+              onClick={() => {
+                triggerHaptic("selection");
+                setCategoryPickerOpen((current) => !current);
+              }}
+            >
+              <SelectedNewItemIcon size={17} />
+            </button>
+            {categoryPickerOpen ? (
+              <span className="new-item-category-popover">
+                {CATEGORY_META.map((category) => {
+                  const Icon = category.icon;
+                  const active = normalizeCategoryLabel(category.label) === normalizeCategoryLabel(newItem.category);
+
+                  return (
+                    <button
+                      className={active ? "active" : ""}
+                      key={category.label}
+                      type="button"
+                      style={{ "--new-item-category-color": category.color } as CSSProperties}
+                      onClick={() => {
+                        triggerHaptic("selection");
+                        setNewItem((current) => ({ ...current, category: category.label }));
+                        setCategoryPickerOpen(false);
+                      }}
+                    >
+                      <Icon size={15} />
+                      <span>{category.label}</span>
+                    </button>
+                  );
+                })}
+              </span>
+            ) : null}
+          </span>
           <input
             autoFocus
+            className="new-item-name-input"
             placeholder="Nome do item"
             value={newItem.name}
             onChange={(event) => setNewItem((current) => ({ ...current, name: event.target.value }))}
           />
           <input
+            className="new-item-price-input"
             inputMode="decimal"
             placeholder="Preco"
             value={newItem.price}
             onChange={(event) => setNewItem((current) => ({ ...current, price: event.target.value }))}
           />
           <input
+            className="new-item-quantity-input"
             inputMode="numeric"
             placeholder="Qtd"
             value={newItem.quantity}
@@ -1513,6 +1561,7 @@ function FairPage({ deleteFair, deleteItem, fair, items, createItem, onBack, onO
             onClick={() => {
               triggerHaptic("light");
               setShowNewItem(false);
+              setCategoryPickerOpen(false);
             }}
           >
             <X size={16} />
