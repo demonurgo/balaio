@@ -1,0 +1,1 @@
+ALTER TABLE "fair_items" ADD COLUMN "pricing_mode" varchar(16) DEFAULT 'unit' NOT NULL;

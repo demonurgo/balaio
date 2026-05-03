@@ -778,7 +778,7 @@ type StockProductPageProps = {
 };
 
 type UpdateFairItem = (itemId: string, input: Partial<Omit<FairItem, "id" | "fairId" | "totalPrice">>) => Promise<void>;
-type CreateFairItem = (fairId: string, input: { category?: string | null; name: string; quantity?: number; unitPrice?: number; unit?: string }) => Promise<void>;
+type CreateFairItem = (fairId: string, input: { category?: string | null; name: string; pricingMode?: PricingMode; quantity?: number; unitPrice?: number; unit?: string }) => Promise<void>;
 type UpdateFair = (fairId: string, input: Partial<Pick<Fair, "name" | "month" | "year" | "budget">>) => Promise<void>;
 
 type FairPageProps = {
@@ -808,6 +808,7 @@ type ProductPageProps = {
 type ItemField = "name" | "price" | "quantity";
 type ItemSortMode = "manual" | "category" | "priceAsc" | "priceDesc";
 type CategoryChartMode = "value" | "quantity";
+type PricingMode = "unit" | "total";
 type SwipeLock = "scroll" | "swipe" | null;
 type SwipeState = {
   pointerId: number;
@@ -1264,7 +1265,7 @@ function FairPage({ deleteFair, deleteItem, fair, items, createItem, onBack, onO
   const [budgetDraft, setBudgetDraft] = useState(String(fair.budget).replace(".", ","));
   const [nameDraft, setNameDraft] = useState(fair.name);
   const [showNewItem, setShowNewItem] = useState(false);
-  const [newItem, setNewItem] = useState({ category: "Outros", name: "", price: "", quantity: "1" });
+  const [newItem, setNewItem] = useState<{ category: string; name: string; price: string; pricingMode: PricingMode; quantity: string }>({ category: "Outros", name: "", price: "", pricingMode: "unit", quantity: "1" });
   const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [backPressed, setBackPressed] = useState(false);
@@ -1313,11 +1314,12 @@ function FairPage({ deleteFair, deleteItem, fair, items, createItem, onBack, onO
     setSaving(true);
     await createItem(fair.id, {
       name,
+      pricingMode: newItem.pricingMode,
       quantity: parseQuantityInput(newItem.quantity),
       unitPrice: parseMoneyInput(newItem.price),
       category: selectedNewItemCategory.label
     });
-    setNewItem({ category: "Outros", name: "", price: "", quantity: "1" });
+    setNewItem({ category: "Outros", name: "", price: "", pricingMode: "unit", quantity: "1" });
     setCategoryPickerOpen(false);
     setShowNewItem(false);
     setSaving(false);
@@ -1566,6 +1568,17 @@ function FairPage({ deleteFair, deleteItem, fair, items, createItem, onBack, onO
             value={newItem.price}
             onChange={(event) => setNewItem((current) => ({ ...current, price: event.target.value }))}
           />
+          <button
+            className="new-item-pricing-button"
+            type="button"
+            aria-label={newItem.pricingMode === "unit" ? "Preco por unidade" : "Preco total"}
+            onClick={() => {
+              triggerHaptic("selection");
+              setNewItem((current) => ({ ...current, pricingMode: current.pricingMode === "unit" ? "total" : "unit" }));
+            }}
+          >
+            {newItem.pricingMode === "unit" ? "un" : "total"}
+          </button>
           <input
             className="new-item-quantity-input"
             inputMode="numeric"
@@ -1982,7 +1995,7 @@ function FairTodoRow({ categoryColor, deleteItem, item, onOpenDetail, togglePurc
     triggerHaptic("selection");
     setDraft({
       name: item.name,
-      price: String(item.unitPrice).replace(".", ","),
+      price: String(item.pricingMode === "total" ? item.totalPrice : item.unitPrice).replace(".", ","),
       quantity: String(item.quantity)
     });
     setEditing(field);
@@ -1999,7 +2012,7 @@ function FairTodoRow({ categoryColor, deleteItem, item, onOpenDetail, togglePurc
     }
 
     if (field === "price") {
-      void updateItem(item.id, { unitPrice: parseMoneyInput(draft.price) });
+      void updateItem(item.id, { pricingMode: item.pricingMode, unitPrice: parseMoneyInput(draft.price) });
       triggerHaptic("success");
     }
 
@@ -2094,7 +2107,7 @@ function FairTodoRow({ categoryColor, deleteItem, item, onOpenDetail, togglePurc
             />
           ) : (
             <button className="todo-price-button" type="button" onClick={() => startEdit("price")}>
-              {formatCurrency(item.unitPrice)}
+              {formatCurrency(item.pricingMode === "total" ? item.totalPrice : item.unitPrice)}
             </button>
           )}
         </div>
@@ -2133,7 +2146,8 @@ function ProductPage({ deleteItem, fair, item, onBack, togglePurchased, updateIt
   }, [item.category]);
   const [draft, setDraft] = useState({
     name: item.name,
-    price: String(item.unitPrice).replace(".", ","),
+    price: String(item.pricingMode === "total" ? item.totalPrice : item.unitPrice).replace(".", ","),
+    pricingMode: item.pricingMode,
     quantity: String(item.quantity),
     category: item.category ?? "",
     notes: item.notes ?? ""
@@ -2155,6 +2169,7 @@ function ProductPage({ deleteItem, fair, item, onBack, togglePurchased, updateIt
   const saveProduct = async () => {
     await updateItem(item.id, {
       name: draft.name.trim() || item.name,
+      pricingMode: draft.pricingMode,
       unitPrice: parseMoneyInput(draft.price),
       quantity: parseQuantityInput(draft.quantity),
       category: draft.category.trim(),
@@ -2223,7 +2238,19 @@ function ProductPage({ deleteItem, fair, item, onBack, togglePurchased, updateIt
 
         <div className="product-field-grid">
           <label className="product-field">
-            <span>Preco</span>
+            <span>
+              Preco
+              <button
+                className="product-pricing-toggle"
+                type="button"
+                onClick={() => {
+                  triggerHaptic("selection");
+                  setDraft((current) => ({ ...current, pricingMode: current.pricingMode === "unit" ? "total" : "unit" }));
+                }}
+              >
+                {draft.pricingMode === "unit" ? "por un." : "total"}
+              </button>
+            </span>
             <input inputMode="decimal" value={draft.price} onChange={(event) => setDraft((current) => ({ ...current, price: event.target.value }))} />
           </label>
           <label className="product-field">

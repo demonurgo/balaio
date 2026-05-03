@@ -47,6 +47,7 @@ const itemCreateSchema = z.object({
   name: z.string().trim().min(1).max(160),
   quantity: z.number().min(0.01).max(9999).default(1),
   unit: z.string().trim().min(1).max(24).default("un"),
+  pricingMode: z.enum(["unit", "total"]).default("unit"),
   unitPrice: z.number().min(0).max(999999).default(0),
   purchased: z.boolean().default(false),
   category: z.string().trim().max(80).nullable().optional(),
@@ -58,6 +59,7 @@ const itemUpdateSchema = z.object({
   name: z.string().trim().min(1).max(160).optional(),
   quantity: z.number().min(0.01).max(9999).optional(),
   unit: z.string().trim().min(1).max(24).optional(),
+  pricingMode: z.enum(["unit", "total"]).optional(),
   unitPrice: z.number().min(0).max(999999).optional(),
   purchased: z.boolean().optional(),
   category: z.string().trim().max(80).nullable().optional(),
@@ -214,7 +216,7 @@ export async function registerFairRoutes(app: FastifyInstance, io: RealtimeServe
       .select({ value: count() })
       .from(fairItems)
       .where(eq(fairItems.fairId, params.data.fairId));
-    const totalPrice = parsed.data.quantity * parsed.data.unitPrice;
+    const prices = getItemPrices(parsed.data.quantity, parsed.data.unitPrice, parsed.data.pricingMode);
     const [item] = await db
       .insert(fairItems)
       .values({
@@ -222,8 +224,9 @@ export async function registerFairRoutes(app: FastifyInstance, io: RealtimeServe
         name: parsed.data.name,
         quantity: toDbNumber(parsed.data.quantity),
         unit: parsed.data.unit,
-        unitPrice: toDbNumber(parsed.data.unitPrice),
-        totalPrice: toDbNumber(totalPrice),
+        pricingMode: parsed.data.pricingMode,
+        unitPrice: toDbNumber(prices.unitPrice),
+        totalPrice: toDbNumber(prices.totalPrice),
         purchased: parsed.data.purchased,
         category: parsed.data.category ?? null,
         notes: parsed.data.notes ?? null,
@@ -278,17 +281,20 @@ export async function registerFairRoutes(app: FastifyInstance, io: RealtimeServe
     }
 
     const quantity = parsed.data.quantity ?? toNumber(current[0].quantity);
-    const unitPrice = parsed.data.unitPrice ?? toNumber(current[0].unitPrice);
+    const pricingMode = parsed.data.pricingMode ?? getPricingMode(current[0].pricingMode);
+    const priceInput = parsed.data.unitPrice ?? (pricingMode === "total" ? toNumber(current[0].totalPrice) : toNumber(current[0].unitPrice));
+    const prices = getItemPrices(quantity, priceInput, pricingMode);
     const patch: Partial<typeof fairItems.$inferInsert> = {
       updatedAt: new Date(),
       updatedBy: userId,
-      totalPrice: toDbNumber(quantity * unitPrice)
+      pricingMode,
+      unitPrice: toDbNumber(prices.unitPrice),
+      totalPrice: toDbNumber(prices.totalPrice)
     };
 
     if (parsed.data.name !== undefined) patch.name = parsed.data.name;
     if (parsed.data.quantity !== undefined) patch.quantity = toDbNumber(parsed.data.quantity);
     if (parsed.data.unit !== undefined) patch.unit = parsed.data.unit;
-    if (parsed.data.unitPrice !== undefined) patch.unitPrice = toDbNumber(parsed.data.unitPrice);
     if (parsed.data.purchased !== undefined) patch.purchased = parsed.data.purchased;
     if (parsed.data.category !== undefined) patch.category = parsed.data.category;
     if (parsed.data.notes !== undefined) patch.notes = parsed.data.notes;
@@ -501,6 +507,7 @@ function toItemDto(item: DbItem) {
     name: item.name,
     quantity: toNumber(item.quantity),
     unit: item.unit,
+    pricingMode: getPricingMode(item.pricingMode),
     unitPrice: toNumber(item.unitPrice),
     totalPrice: toNumber(item.totalPrice),
     purchased: item.purchased,
@@ -517,6 +524,24 @@ function toNumber(value: unknown) {
 
 function toDbNumber(value: number) {
   return Number(value || 0).toFixed(2);
+}
+
+function getPricingMode(value: unknown) {
+  return value === "total" ? "total" : "unit";
+}
+
+function getItemPrices(quantity: number, priceInput: number, pricingMode: "unit" | "total") {
+  if (pricingMode === "total") {
+    return {
+      unitPrice: quantity > 0 ? priceInput / quantity : 0,
+      totalPrice: priceInput
+    };
+  }
+
+  return {
+    unitPrice: priceInput,
+    totalPrice: quantity * priceInput
+  };
 }
 
 async function upsertStockItem(userId: string, item: DbItem) {

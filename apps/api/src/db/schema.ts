@@ -74,6 +74,7 @@ export const fairItems = pgTable("fair_items", {
   name: varchar("name", { length: 160 }).notNull(),
   quantity: numeric("quantity", { precision: 10, scale: 2 }).notNull().default("1"),
   unit: varchar("unit", { length: 24 }).notNull().default("un"),
+  pricingMode: varchar("pricing_mode", { length: 16 }).notNull().default("unit"),
   unitPrice: numeric("unit_price", { precision: 12, scale: 2 }).notNull().default("0"),
   totalPrice: numeric("total_price", { precision: 12, scale: 2 }).notNull().default("0"),
   purchased: boolean("purchased").notNull().default(false),

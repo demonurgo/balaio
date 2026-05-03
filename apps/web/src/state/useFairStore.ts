@@ -19,6 +19,7 @@ export type FairItem = {
   name: string;
   quantity: number;
   unit: string;
+  pricingMode: "unit" | "total";
   unitPrice: number;
   totalPrice: number;
   purchased: boolean;
@@ -162,6 +163,7 @@ function mapFair(fair: FairSummaryDto): Fair {
 function mapItem(item: FairItemDto): FairItem {
   return {
     ...item,
+    pricingMode: item.pricingMode === "total" ? "total" : "unit",
     category: item.category ?? "",
     notes: item.notes ?? "",
     imageUrl: item.imageUrl ?? ""

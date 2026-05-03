@@ -1465,7 +1465,7 @@ h2 {
 .new-item-form {
   position: relative;
   display: grid;
-  grid-template-columns: 38px minmax(0, 1fr) 72px 46px 34px 34px;
+  grid-template-columns: 38px minmax(0, 1fr) 68px 44px 44px 34px 34px;
   gap: 6px;
   align-items: center;
   margin-top: 12px;
@@ -1544,6 +1544,20 @@ h2 {
   color: var(--color-logo-white);
   border-color: var(--color-primary);
   background: var(--color-primary);
+}
+
+.new-item-pricing-button,
+.product-pricing-toggle {
+  color: var(--color-primary) !important;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.product-pricing-toggle {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
 }
 
 .add-item-strip {
@@ -3001,7 +3015,7 @@ h2 {
   }
 
   .new-item-form {
-    grid-template-columns: 34px minmax(0, 1fr) 54px 38px 31px 31px;
+    grid-template-columns: 34px minmax(0, 1fr) 50px 38px 35px 31px 31px;
     gap: 4px;
   }
 

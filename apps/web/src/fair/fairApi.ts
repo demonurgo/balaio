@@ -16,6 +16,7 @@ export type FairItemDto = {
   name: string;
   quantity: number;
   unit: string;
+  pricingMode?: "unit" | "total";
   unitPrice: number;
   totalPrice: number;
   purchased: boolean;
@@ -37,6 +38,7 @@ export type ItemPayload = {
   name: string;
   quantity?: number;
   unit?: string;
+  pricingMode?: "unit" | "total";
   unitPrice?: number;
   purchased?: boolean;
   category?: string | null;
