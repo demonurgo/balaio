@@ -39,6 +39,7 @@ import type { ChangeEvent, CSSProperties, KeyboardEvent, MouseEvent, PointerEven
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AuthScreen } from "./auth/AuthScreen";
 import { triggerHaptic, triggerHapticDuration } from "./lib/haptics";
+import { optimizeImageFile } from "./lib/images";
 import { socket } from "./lib/realtime";
 import { playSound } from "./lib/sound";
 import { useAuthStore } from "./state/useAuthStore";
@@ -755,7 +756,7 @@ type ProfilePageProps = {
   logout: () => Promise<void>;
   theme: "light" | "dark";
   toggleTheme: () => void;
-  updateProfile: (values: { firstName: string; lastName: string; birthDate: string; email: string }) => Promise<void>;
+  updateProfile: (values: { firstName: string; lastName: string; birthDate: string; email: string; imageUrl?: string | null }) => Promise<void>;
 };
 
 type StockPageProps = {
@@ -2068,6 +2069,8 @@ function ProductPage({ deleteItem, fair, item, onBack, togglePurchased, updateIt
     notes: item.notes ?? ""
   });
   const [backPressed, setBackPressed] = useState(false);
+  const [imageError, setImageError] = useState("");
+  const [imageUploading, setImageUploading] = useState(false);
 
   const handleBack = () => {
     if (backPressed) {
@@ -2090,19 +2093,26 @@ function ProductPage({ deleteItem, fair, item, onBack, togglePurchased, updateIt
     triggerHaptic("success");
   };
 
-  const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.currentTarget.files?.[0];
+    event.currentTarget.value = "";
 
     if (!file) {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      void updateItem(item.id, { imageUrl: String(reader.result ?? "") });
+    try {
+      setImageError("");
+      setImageUploading(true);
+      const imageUrl = await optimizeImageFile(file, { maxWidth: 1200, maxHeight: 1200, maxBytes: 900_000 });
+      await updateItem(item.id, { imageUrl });
       triggerHaptic("success");
-    };
-    reader.readAsDataURL(file);
+    } catch (error) {
+      setImageError(error instanceof Error ? error.message : "Nao foi possivel salvar a imagem.");
+      triggerHaptic("warning");
+    } finally {
+      setImageUploading(false);
+    }
   };
 
   return (
@@ -2128,11 +2138,12 @@ function ProductPage({ deleteItem, fair, item, onBack, togglePurchased, updateIt
         </button>
       </header>
 
-      <label className={item.imageUrl ? "product-image filled" : "product-image"}>
+      <label className={`${item.imageUrl ? "product-image filled" : "product-image"}${imageUploading ? " uploading" : ""}`}>
         {item.imageUrl ? <img src={item.imageUrl} alt="" /> : <ImagePlus size={28} />}
-        <span>{item.imageUrl ? "Trocar imagem" : "Adicionar imagem"}</span>
+        <span>{imageUploading ? "Otimizando..." : item.imageUrl ? "Trocar imagem" : "Adicionar imagem"}</span>
         <input accept="image/*" type="file" onChange={handleImageChange} />
       </label>
+      {imageError ? <p className="product-image-error">{imageError}</p> : null}
 
       <div className="product-form">
         <label className="product-field large">
@@ -2229,6 +2240,8 @@ function StockProductPage({ deleteItem, item, onBack, restoreItem, updateItem }:
     notes: item.notes ?? ""
   });
   const [backPressed, setBackPressed] = useState(false);
+  const [imageError, setImageError] = useState("");
+  const [imageUploading, setImageUploading] = useState(false);
 
   const handleBack = () => {
     if (backPressed) {
@@ -2251,19 +2264,26 @@ function StockProductPage({ deleteItem, item, onBack, restoreItem, updateItem }:
     triggerHaptic("success");
   };
 
-  const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.currentTarget.files?.[0];
+    event.currentTarget.value = "";
 
     if (!file) {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      void updateItem(item.id, { imageUrl: String(reader.result ?? "") });
+    try {
+      setImageError("");
+      setImageUploading(true);
+      const imageUrl = await optimizeImageFile(file, { maxWidth: 1200, maxHeight: 1200, maxBytes: 900_000 });
+      await updateItem(item.id, { imageUrl });
       triggerHaptic("success");
-    };
-    reader.readAsDataURL(file);
+    } catch (error) {
+      setImageError(error instanceof Error ? error.message : "Nao foi possivel salvar a imagem.");
+      triggerHaptic("warning");
+    } finally {
+      setImageUploading(false);
+    }
   };
 
   return (
@@ -2278,11 +2298,12 @@ function StockProductPage({ deleteItem, item, onBack, restoreItem, updateItem }:
         </div>
       </header>
 
-      <label className={item.imageUrl ? "product-image filled" : "product-image"}>
+      <label className={`${item.imageUrl ? "product-image filled" : "product-image"}${imageUploading ? " uploading" : ""}`}>
         {item.imageUrl ? <img src={item.imageUrl} alt="" /> : <ImagePlus size={28} />}
-        <span>{item.imageUrl ? "Trocar imagem" : "Adicionar imagem"}</span>
+        <span>{imageUploading ? "Otimizando..." : item.imageUrl ? "Trocar imagem" : "Adicionar imagem"}</span>
         <input accept="image/*" type="file" onChange={handleImageChange} />
       </label>
+      {imageError ? <p className="product-image-error">{imageError}</p> : null}
 
       <div className="product-form">
         <label className="product-field large">
@@ -2941,6 +2962,8 @@ function ProfilePage({ user, fairsCount, itemsCount, logout, theme, toggleTheme,
   });
   const [editError, setEditError] = useState("");
   const [savingField, setSavingField] = useState<ProfileField | null>(null);
+  const [avatarError, setAvatarError] = useState("");
+  const [avatarUploading, setAvatarUploading] = useState(false);
 
   const startEdit = (field: ProfileField) => {
     triggerHaptic("selection");
@@ -3017,16 +3040,45 @@ function ProfilePage({ user, fairsCount, itemsCount, logout, theme, toggleTheme,
     }
   };
 
+  const handleAvatarChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.currentTarget.files?.[0];
+    event.currentTarget.value = "";
+
+    if (!file || !user) {
+      return;
+    }
+
+    try {
+      setAvatarError("");
+      setAvatarUploading(true);
+      const imageUrl = await optimizeImageFile(file, { maxWidth: 520, maxHeight: 520, maxBytes: 260_000 });
+      await updateProfile({
+        firstName: user.firstName,
+        lastName: user.lastName,
+        birthDate: user.birthDate,
+        email: user.email,
+        imageUrl
+      });
+      triggerHaptic("success");
+    } catch (error) {
+      setAvatarError(error instanceof Error ? error.message : "Nao foi possivel salvar a imagem.");
+      triggerHaptic("warning");
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
+
   return (
     <section className="profile-page" id="perfil" aria-label="Perfil">
       <section className="profile-overview" aria-label="Resumo do perfil">
         <div className="profile-hero">
-          <div className="profile-avatar" aria-hidden="true">
-            <span>{initials}</span>
-            <i>
+          <div className={user?.imageUrl ? "profile-avatar filled" : "profile-avatar"}>
+            {user?.imageUrl ? <img className="profile-avatar-photo" src={user.imageUrl} alt="" /> : <span>{initials}</span>}
+            <label className={avatarUploading ? "profile-avatar-picker uploading" : "profile-avatar-picker"} aria-label="Adicionar imagem de perfil">
               <img src="/assets/star.svg" alt="" aria-hidden="true" />
-              <Edit3 size={13} />
-            </i>
+              {avatarUploading ? <span /> : <Edit3 size={13} />}
+              <input accept="image/*" type="file" onChange={handleAvatarChange} />
+            </label>
           </div>
 
           <div className="profile-identity">
@@ -3051,6 +3103,7 @@ function ProfilePage({ user, fairsCount, itemsCount, logout, theme, toggleTheme,
             </div>
           </div>
         </div>
+        {avatarError ? <p className="profile-image-error">{avatarError}</p> : null}
 
         <button
           className="profile-pass"

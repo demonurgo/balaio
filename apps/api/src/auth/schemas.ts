@@ -37,6 +37,8 @@ const birthDateSchema = z
     );
   }, "Data de nascimento invalida.");
 
+const imageUrlSchema = z.string().max(1_500_000, "Imagem muito pesada.").nullable();
+
 export const registerSchema = z
   .object({
     firstName: nameSchema,
@@ -60,7 +62,8 @@ export const profileUpdateSchema = z.object({
   firstName: nameSchema,
   lastName: nameSchema,
   birthDate: birthDateSchema,
-  email: emailSchema
+  email: emailSchema,
+  imageUrl: imageUrlSchema.optional()
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;

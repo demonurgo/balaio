@@ -8,6 +8,7 @@ export type AuthUser = {
   lastName: string;
   birthDate: string;
   email: string;
+  imageUrl?: string | null;
 };
 
 type AuthResponse = {
@@ -19,6 +20,7 @@ export type ProfileUpdateValues = {
   lastName: string;
   birthDate: string;
   email: string;
+  imageUrl?: string | null;
 };
 
 export function registerAccount(values: RegisterValues) {

@@ -11,7 +11,8 @@ function toPublicUser(user: AuthUserRecord) {
     firstName: user.firstName,
     lastName: user.lastName,
     birthDate: user.birthDate,
-    email: user.email
+    email: user.email,
+    imageUrl: user.imageUrl
   };
 }
 

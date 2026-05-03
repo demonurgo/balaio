@@ -24,6 +24,7 @@ class MemoryAuthRepository implements AuthRepository {
       lastName: input.lastName,
       birthDate: input.birthDate,
       email: input.email,
+      imageUrl: null,
       passwordHash: input.passwordHash
     };
     this.users.set(user.id, user);
@@ -43,7 +44,8 @@ class MemoryAuthRepository implements AuthRepository {
       firstName: input.firstName,
       lastName: input.lastName,
       birthDate: input.birthDate,
-      email: input.email
+      email: input.email,
+      imageUrl: input.imageUrl !== undefined ? input.imageUrl : current.imageUrl
     };
 
     this.users.set(id, user);

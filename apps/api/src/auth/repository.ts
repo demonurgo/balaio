@@ -9,6 +9,7 @@ export type AuthUserRecord = {
   lastName: string;
   birthDate: string;
   email: string;
+  imageUrl: string | null;
   passwordHash: string;
 };
 
@@ -25,6 +26,7 @@ export type UpdateUserInput = {
   lastName: string;
   birthDate: string;
   email: string;
+  imageUrl?: string | null | undefined;
 };
 
 export type AuthRepository = {
@@ -41,6 +43,7 @@ const userColumns = {
   lastName: users.lastName,
   birthDate: users.birthDate,
   email: users.email,
+  imageUrl: users.imageUrl,
   passwordHash: users.passwordHash
 };
 
@@ -84,6 +87,7 @@ export function createDbAuthRepository(): AuthRepository {
           lastName: input.lastName,
           birthDate: input.birthDate,
           email: input.email,
+          ...(input.imageUrl !== undefined ? { imageUrl: input.imageUrl } : {}),
           updatedAt: new Date()
         })
         .where(eq(users.id, id))

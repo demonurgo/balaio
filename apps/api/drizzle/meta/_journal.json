@@ -29,6 +29,13 @@
       "when": 1777773752453,
       "tag": "0003_shallow_bishop",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1777782818151,
+      "tag": "0004_stale_longshot",
+      "breakpoints": true
     }
   ]
 }
