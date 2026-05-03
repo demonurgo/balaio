@@ -46,7 +46,7 @@ export async function createApp(options: CreateAppOptions = {}) {
   await registerHealthRoutes(app);
   await registerAuthRoutes(app, options.authRepository ?? createDbAuthRepository());
   await registerFairRoutes(app, io);
-  await registerStockRoutes(app);
+  await registerStockRoutes(app, io);
 
   return { app, io };
 }

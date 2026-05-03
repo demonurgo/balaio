@@ -115,6 +115,7 @@ export const stockItems = pgTable(
     notes: text("notes"),
     imageUrl: text("image_url"),
     status: stockStatus("status").notNull().default("in_stock"),
+    consumedBy: uuid("consumed_by").references(() => users.id, { onDelete: "set null" }),
     consumedAt: timestamp("consumed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull()
@@ -163,5 +164,9 @@ export const stockItemsRelations = relations(stockItems, ({ one }) => ({
   sourceFairItem: one(fairItems, {
     fields: [stockItems.sourceFairItemId],
     references: [fairItems.id]
+  }),
+  consumedByUser: one(users, {
+    fields: [stockItems.consumedBy],
+    references: [users.id]
   })
 }));

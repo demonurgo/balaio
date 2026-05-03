@@ -16,6 +16,8 @@ export type StockItemDto = {
   sourceFairId?: string | null;
   sourceFairItemId?: string | null;
   sourceFairName?: string | null;
+  consumedBy?: string | null;
+  consumedByName?: string | null;
   consumedAt?: string | null;
   createdAt: string;
   updatedAt: string;

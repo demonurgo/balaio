@@ -24,6 +24,7 @@ import {
   Share2,
   ShieldCheck,
   ShoppingBasket,
+  Search,
   SprayCan,
   StickyNote,
   Store,
@@ -180,6 +181,7 @@ function App() {
     socket.on("item:created", refresh);
     socket.on("item:updated", refresh);
     socket.on("item:deleted", refresh);
+    socket.on("stock:updated", refresh);
 
     return () => {
       socket.emit("fair:leave", { fairId: selectedFairId });
@@ -191,6 +193,7 @@ function App() {
       socket.off("item:created", refresh);
       socket.off("item:updated", refresh);
       socket.off("item:deleted", refresh);
+      socket.off("stock:updated", refresh);
     };
   }, [authStatus, loadFairs, loadStock, selectedFairId]);
 
@@ -2178,12 +2181,117 @@ function ProductPage({ deleteItem, fair, item, onBack, togglePurchased, updateIt
   );
 }
 
+type StockCategoryBreakdownItem = ReturnType<typeof getStockCategoryBreakdown>["categories"][number];
+
+function StockCategoryRingChart({ categories, total }: { categories: StockCategoryBreakdownItem[]; total: number }) {
+  const leading = categories[0];
+  const [activeCategory, setActiveCategory] = useState<StockCategoryBreakdownItem | null>(null);
+  const radius = 76;
+  const circumference = 2 * Math.PI * radius;
+  const gap = categories.length > 1 ? 34 : 0;
+  const available = circumference - gap * categories.length;
+  const getDash = (category: StockCategoryBreakdownItem) => (category.percent / 100) * available;
+  const segments = categories.map((category, index) => {
+    const dash = getDash(category);
+    const offset = categories.slice(0, index).reduce((sum, current) => sum + getDash(current) + gap, 0);
+    const sweep = (dash / circumference) * 360;
+    const angle = -90 + (offset / circumference) * 360 + sweep * 0.08;
+    const iconRadius = 76;
+
+    return {
+      category,
+      dash,
+      offset,
+      iconX: 110 + Math.cos((angle * Math.PI) / 180) * iconRadius,
+      iconY: 110 + Math.sin((angle * Math.PI) / 180) * iconRadius
+    };
+  });
+  const displayedCategory = activeCategory ?? leading;
+
+  return (
+    <section className="category-ring-card stock-ring-card" aria-label="Distribuição por categoria do estoque">
+      <div className="category-ring-visual">
+        <svg className="category-ring-svg" viewBox="0 0 220 220" role="img" aria-label="Gráfico de estoque por categorias">
+          {segments.map(({ category, dash, offset, iconX, iconY }) => {
+            const Icon = category.Icon;
+
+            return (
+              <g
+                className={activeCategory?.label === category.label ? "category-ring-hit active" : "category-ring-hit"}
+                key={category.label}
+                onClick={() => {
+                  triggerHaptic("selection");
+                  setActiveCategory((current) => (current?.label === category.label ? null : category));
+                }}
+              >
+                <circle
+                  className="category-ring-segment"
+                  cx="110"
+                  cy="110"
+                  r={radius}
+                  stroke={category.color}
+                  strokeDasharray={`${dash} ${circumference - dash}`}
+                  strokeDashoffset={-offset}
+                />
+                <foreignObject height="26" width="26" x={iconX - 13} y={iconY - 13}>
+                  <span className="category-ring-icon" style={{ backgroundColor: category.color }}>
+                    <Icon size={14} />
+                  </span>
+                </foreignObject>
+              </g>
+            );
+          })}
+        </svg>
+
+        <div className="category-ring-center" key={displayedCategory?.label ?? "stock-empty"}>
+          <strong>{displayedCategory ? `${displayedCategory.percent}%` : "0%"}</strong>
+          <span>{displayedCategory ? displayedCategory.label : "sem estoque"}</span>
+          <small>{displayedCategory ? `${formatQuantity(displayedCategory.value)} un.` : `${formatQuantity(total)} un.`}</small>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function getStockCategoryBreakdown(items: StockItem[]) {
+  const totals = new Map<string, { label: string; value: number; count: number }>();
+
+  items.forEach((item) => {
+    const label = getCategoryMeta(item.category || item.name)?.label ?? (item.category || "Outros");
+    const key = label.toLowerCase();
+    const current = totals.get(key) ?? { label, value: 0, count: 0 };
+    current.value += item.quantity;
+    current.count += 1;
+    totals.set(key, current);
+  });
+
+  const total = Array.from(totals.values()).reduce((sum, item) => sum + item.value, 0);
+  const categories = Array.from(totals.values()).sort((a, b) => b.value - a.value).map((item, index) => ({
+      ...item,
+      color: getCategoryColor(item.label, index),
+      Icon: getCategoryIcon(item.label),
+      percent: total > 0 ? Math.round((item.value / total) * 100) : 0
+    }));
+
+  return { categories, total };
+}
+
 function StockPage({ consumeItem, error, items, restoreItem, status }: StockPageProps) {
-  const [filter, setFilter] = useState<"in_stock" | "consumed">("in_stock");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [showConsumed, setShowConsumed] = useState(false);
+  const [query, setQuery] = useState("");
   const [backPressed, setBackPressed] = useState(false);
   const inStockItems = items.filter((item) => item.status === "in_stock");
   const consumedItems = items.filter((item) => item.status === "consumed");
-  const visibleItems = filter === "in_stock" ? inStockItems : consumedItems;
+  const normalizedQuery = normalizeCategoryLabel(query);
+  const visibleItems = inStockItems.filter((item) => {
+    if (!normalizedQuery) {
+      return true;
+    }
+
+    return normalizeCategoryLabel(`${item.name} ${item.category}`).includes(normalizedQuery);
+  });
+  const stockBreakdown = getStockCategoryBreakdown(inStockItems);
   const totalInStock = inStockItems.reduce((sum, item) => sum + item.totalPrice, 0);
   const handleBack = () => {
     if (backPressed) {
@@ -2211,31 +2319,47 @@ function StockPage({ consumeItem, error, items, restoreItem, status }: StockPage
           <small>Total em estoque</small>
           <strong>{formatCurrency(totalInStock)}</strong>
         </div>
+        <div className="fair-menu">
+          <button
+            className="icon-button fair-menu-button"
+            type="button"
+            aria-expanded={menuOpen}
+            aria-label="Mais opções"
+            onClick={() => {
+              triggerHaptic("light");
+              setMenuOpen((current) => !current);
+            }}
+          >
+            <MoreHorizontal size={20} />
+          </button>
+          {menuOpen ? (
+            <div className="fair-menu-popover stock-menu-popover">
+              <button
+                className={showConsumed ? "active" : ""}
+                type="button"
+                onClick={() => {
+                  triggerHaptic("selection");
+                  setShowConsumed((current) => !current);
+                  setMenuOpen(false);
+                }}
+              >
+                Consumidos
+              </button>
+            </div>
+          ) : null}
+        </div>
       </header>
 
-      <div className="stock-tabs" role="tablist" aria-label="Status do estoque">
-        <button
-          className={filter === "in_stock" ? "active" : ""}
-          type="button"
-          onClick={() => {
-            triggerHaptic("selection");
-            setFilter("in_stock");
-          }}
-        >
-          Em estoque
-          <span>{inStockItems.length}</span>
-        </button>
-        <button
-          className={filter === "consumed" ? "active" : ""}
-          type="button"
-          onClick={() => {
-            triggerHaptic("selection");
-            setFilter("consumed");
-          }}
-        >
-          Consumidos
-          <span>{consumedItems.length}</span>
-        </button>
+      <StockCategoryRingChart categories={stockBreakdown.categories} total={stockBreakdown.total} />
+
+      <label className="stock-search">
+        <Search size={17} />
+        <input value={query} placeholder="Buscar no estoque" onChange={(event) => setQuery(event.target.value)} />
+      </label>
+
+      <div className="stock-summary-line">
+        <strong>Em estoque</strong>
+        <span>{inStockItems.length} produtos</span>
       </div>
 
       <div className="stock-list">
@@ -2244,14 +2368,35 @@ function StockPage({ consumeItem, error, items, restoreItem, status }: StockPage
         {status !== "loading" && visibleItems.length === 0 ? (
           <div className="stock-empty">
             <Store size={24} />
-            <strong>{filter === "in_stock" ? "Nada em estoque ainda" : "Nenhum consumido ainda"}</strong>
-            <span>{filter === "in_stock" ? "Marque itens da feira como comprados para aparecerem aqui." : "Itens consumidos ficam preservados aqui."}</span>
+            <strong>{query ? "Nada encontrado" : "Nada em estoque ainda"}</strong>
+            <span>{query ? "Tente outro nome ou categoria." : "Marque itens da feira como comprados para aparecerem aqui."}</span>
           </div>
         ) : null}
         {visibleItems.map((item) => (
           <StockRow consumeItem={consumeItem} item={item} key={item.id} restoreItem={restoreItem} />
         ))}
       </div>
+
+      {showConsumed ? (
+        <section className="stock-consumed-panel" aria-label="Histórico de consumidos">
+          <div className="stock-summary-line">
+            <strong>Consumidos</strong>
+            <span>{consumedItems.length} registros</span>
+          </div>
+          <div className="stock-list">
+            {consumedItems.length === 0 ? (
+              <div className="stock-empty">
+                <Store size={24} />
+                <strong>Nenhum consumido ainda</strong>
+                <span>Itens consumidos ficam preservados aqui.</span>
+              </div>
+            ) : null}
+            {consumedItems.map((item) => (
+              <StockRow consumeItem={consumeItem} item={item} key={item.id} restoreItem={restoreItem} />
+            ))}
+          </div>
+        </section>
+      ) : null}
     </section>
   );
 }
@@ -2262,12 +2407,24 @@ function StockRow({ consumeItem, item, restoreItem }: { consumeItem: (stockItemI
 
   return (
     <article className={item.status === "consumed" ? "stock-row consumed" : "stock-row"} style={{ "--stock-category-color": color } as CSSProperties}>
-      <span className="stock-category-dot" aria-hidden="true" />
+      <button
+        className={item.status === "consumed" ? "stock-check consumed" : "stock-check"}
+        type="button"
+        aria-label={item.status === "consumed" ? "Restaurar item" : "Consumir item"}
+        onClick={() => {
+          triggerHaptic(item.status === "consumed" ? "selection" : "warning");
+          void (item.status === "consumed" ? restoreItem(item.id) : consumeItem(item.id));
+        }}
+      >
+        {item.status === "consumed" ? <Check size={14} /> : null}
+      </button>
       <div className="stock-row-main">
         <strong>{item.name}</strong>
         <span>
           {category}
           {item.sourceFairName ? ` · ${item.sourceFairName}` : ""}
+          {item.status === "consumed" && item.consumedByName ? ` · consumido por ${item.consumedByName}` : ""}
+          {item.status === "consumed" && item.consumedAt ? ` · ${formatDateTime(item.consumedAt)}` : ""}
         </span>
       </div>
       <div className="stock-row-meta">
@@ -2276,16 +2433,18 @@ function StockRow({ consumeItem, item, restoreItem }: { consumeItem: (stockItemI
         </strong>
         <span>{formatCurrency(item.totalPrice)}</span>
       </div>
-      <button
-        className={item.status === "consumed" ? "stock-action restore" : "stock-action"}
-        type="button"
-        onClick={() => {
-          triggerHaptic(item.status === "consumed" ? "selection" : "warning");
-          void (item.status === "consumed" ? restoreItem(item.id) : consumeItem(item.id));
-        }}
-      >
-        {item.status === "consumed" ? "Voltar" : "Consumir"}
-      </button>
+      {item.status === "consumed" ? (
+        <button
+          className="stock-action restore"
+          type="button"
+          onClick={() => {
+            triggerHaptic("selection");
+            void restoreItem(item.id);
+          }}
+        >
+          Voltar
+        </button>
+      ) : null}
     </article>
   );
 }
@@ -2781,6 +2940,21 @@ function formatQuantity(value: number) {
   return new Intl.NumberFormat("pt-BR", {
     maximumFractionDigits: 2
   }).format(value);
+}
+
+function formatDateTime(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(date);
 }
 
 function parseMoneyInput(value: string) {

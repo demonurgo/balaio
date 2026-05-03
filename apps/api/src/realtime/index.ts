@@ -20,6 +20,7 @@ type ServerToClientEvents = {
   "item:updated": (payload: RealtimeItemEvent) => void;
   "item:deleted": (payload: RealtimeItemEvent) => void;
   "budget:updated": (payload: RealtimeBudgetEvent) => void;
+  "stock:updated": (payload: RealtimeStockEvent) => void;
 };
 
 export type RealtimeFairEvent = {
@@ -35,6 +36,10 @@ export type RealtimeItemEvent = {
 
 export type RealtimeBudgetEvent = {
   fairId: string;
+  changedBy?: string;
+};
+
+export type RealtimeStockEvent = {
   changedBy?: string;
 };
 

@@ -16,6 +16,8 @@ export type StockItem = {
   sourceFairId: string;
   sourceFairItemId: string;
   sourceFairName: string;
+  consumedBy: string;
+  consumedByName: string;
   consumedAt: string;
   createdAt: string;
   updatedAt: string;
@@ -74,6 +76,8 @@ function mapStockItem(item: StockItemDto): StockItem {
     sourceFairId: item.sourceFairId ?? "",
     sourceFairItemId: item.sourceFairItemId ?? "",
     sourceFairName: item.sourceFairName ?? "",
+    consumedBy: item.consumedBy ?? "",
+    consumedByName: item.consumedByName ?? "",
     consumedAt: item.consumedAt ?? ""
   };
 }

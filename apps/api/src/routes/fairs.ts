@@ -230,6 +230,7 @@ export async function registerFairRoutes(app: FastifyInstance, io: RealtimeServe
 
     if (item.purchased) {
       await upsertStockItem(userId, item);
+      io.emit("stock:updated", { changedBy: userId });
     }
 
     io.to(fairRoom(params.data.fairId)).emit("item:created", { fairId: params.data.fairId, itemId: item.id });
@@ -296,6 +297,7 @@ export async function registerFairRoutes(app: FastifyInstance, io: RealtimeServe
 
     if (item.purchased) {
       await upsertStockItem(userId, item);
+      io.emit("stock:updated", { changedBy: userId });
     }
 
     io.to(fairRoom(params.data.fairId)).emit("item:updated", { fairId: params.data.fairId, itemId: item.id });

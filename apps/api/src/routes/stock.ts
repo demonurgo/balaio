@@ -3,7 +3,8 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
 import { getSessionUserId } from "../auth/session.js";
 import { db } from "../db/client.js";
-import { fairs, stockItems } from "../db/schema.js";
+import { fairs, stockItems, users } from "../db/schema.js";
+import type { RealtimeServer } from "../realtime/index.js";
 
 const stockItemParamsSchema = z.object({
   stockItemId: z.string().uuid()
@@ -11,7 +12,7 @@ const stockItemParamsSchema = z.object({
 
 type DbStockItem = typeof stockItems.$inferSelect;
 
-export async function registerStockRoutes(app: FastifyInstance) {
+export async function registerStockRoutes(app: FastifyInstance, io: RealtimeServer) {
   app.get("/api/stock", async (request, reply) => {
     const userId = await requireUser(app, request, reply);
 
@@ -22,15 +23,17 @@ export async function registerStockRoutes(app: FastifyInstance) {
     const rows = await db
       .select({
         stock: stockItems,
-        fairName: fairs.name
+        fairName: fairs.name,
+        consumedByName: users.name
       })
       .from(stockItems)
       .leftJoin(fairs, eq(stockItems.sourceFairId, fairs.id))
+      .leftJoin(users, eq(stockItems.consumedBy, users.id))
       .where(eq(stockItems.userId, userId))
       .orderBy(desc(stockItems.updatedAt), desc(stockItems.createdAt));
 
     return {
-      data: rows.map((row) => toStockDto(row.stock, row.fairName))
+      data: rows.map((row) => toStockDto(row.stock, row.fairName, row.consumedByName))
     };
   });
 
@@ -49,7 +52,7 @@ export async function registerStockRoutes(app: FastifyInstance) {
 
     const [item] = await db
       .update(stockItems)
-      .set({ status: "consumed", consumedAt: new Date(), updatedAt: new Date() })
+      .set({ status: "consumed", consumedAt: new Date(), consumedBy: userId, updatedAt: new Date() })
       .where(and(eq(stockItems.id, params.data.stockItemId), eq(stockItems.userId, userId)))
       .returning();
 
@@ -57,7 +60,8 @@ export async function registerStockRoutes(app: FastifyInstance) {
       return reply.code(404).send({ message: "Item de estoque não encontrado." });
     }
 
-    return { data: toStockDto(item, null) };
+    io.emit("stock:updated", { changedBy: userId });
+    return { data: toStockDto(item, null, null) };
   });
 
   app.patch("/api/stock/:stockItemId/restore", async (request, reply) => {
@@ -75,7 +79,7 @@ export async function registerStockRoutes(app: FastifyInstance) {
 
     const [item] = await db
       .update(stockItems)
-      .set({ status: "in_stock", consumedAt: null, updatedAt: new Date() })
+      .set({ status: "in_stock", consumedAt: null, consumedBy: null, updatedAt: new Date() })
       .where(and(eq(stockItems.id, params.data.stockItemId), eq(stockItems.userId, userId)))
       .returning();
 
@@ -83,7 +87,8 @@ export async function registerStockRoutes(app: FastifyInstance) {
       return reply.code(404).send({ message: "Item de estoque não encontrado." });
     }
 
-    return { data: toStockDto(item, null) };
+    io.emit("stock:updated", { changedBy: userId });
+    return { data: toStockDto(item, null, null) };
   });
 }
 
@@ -98,7 +103,7 @@ async function requireUser(app: FastifyInstance, request: FastifyRequest, reply:
   return userId;
 }
 
-function toStockDto(item: DbStockItem, fairName: string | null) {
+function toStockDto(item: DbStockItem, fairName: string | null, consumedByName: string | null) {
   return {
     id: item.id,
     name: item.name,
@@ -113,6 +118,8 @@ function toStockDto(item: DbStockItem, fairName: string | null) {
     sourceFairId: item.sourceFairId,
     sourceFairItemId: item.sourceFairItemId,
     sourceFairName: fairName,
+    consumedBy: item.consumedBy,
+    consumedByName,
     consumedAt: item.consumedAt?.toISOString() ?? null,
     createdAt: item.createdAt.toISOString(),
     updatedAt: item.updatedAt.toISOString()
