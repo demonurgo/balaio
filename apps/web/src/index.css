@@ -1692,13 +1692,18 @@ h2 {
 }
 
 .stock-header {
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) auto 32px;
+  align-items: center;
+  gap: 10px;
   padding-top: env(safe-area-inset-top);
 }
 
 .stock-header > div:first-of-type {
+  display: flex;
+  align-items: center;
   min-width: 0;
-  margin-right: auto;
+  min-height: 46px;
 }
 
 .stock-header small,
@@ -1709,13 +1714,20 @@ h2 {
 }
 
 .stock-total {
-  display: grid;
-  justify-items: end;
-  gap: 4px;
+  display: flex;
+  align-items: center;
+  min-height: 46px;
 }
 
 .stock-total strong {
   font-size: 20px;
+  line-height: 1;
+}
+
+.stock-header .fair-menu {
+  display: grid;
+  place-items: center;
+  min-height: 46px;
 }
 
 .stock-menu-popover {
@@ -2905,10 +2917,6 @@ h2 {
 
   .product-delete {
     min-height: 42px;
-  }
-
-  .stock-header {
-    align-items: flex-start;
   }
 
   .stock-row {
