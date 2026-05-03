@@ -787,7 +787,8 @@ h2 {
 
 .screen-back-button,
 .fair-screen-header .screen-back-button,
-.product-header .screen-back-button {
+.product-header .screen-back-button,
+.stock-header .screen-back-button {
   position: relative;
   width: 46px;
   min-width: 46px;
@@ -1692,6 +1693,12 @@ h2 {
 
 .stock-header {
   justify-content: space-between;
+  padding-top: env(safe-area-inset-top);
+}
+
+.stock-header > div:first-of-type {
+  min-width: 0;
+  margin-right: auto;
 }
 
 .stock-header small,
@@ -2670,7 +2677,8 @@ h2 {
   }
 
   .fair-screen-header .icon-button,
-  .product-header .icon-button {
+  .product-header .icon-button,
+  .stock-header .icon-button {
     width: 32px;
     min-height: 32px;
     border: 0;
@@ -2678,7 +2686,8 @@ h2 {
   }
 
   .fair-screen-header .screen-back-button,
-  .product-header .screen-back-button {
+  .product-header .screen-back-button,
+  .stock-header .screen-back-button {
     width: 44px;
     min-width: 44px;
     height: 44px;
@@ -2687,7 +2696,8 @@ h2 {
   }
 
   .fair-screen-header h1,
-  .product-header h1 {
+  .product-header h1,
+  .stock-header h1 {
     font-size: 32px;
     line-height: 1;
   }

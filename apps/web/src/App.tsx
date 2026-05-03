@@ -2180,14 +2180,29 @@ function ProductPage({ deleteItem, fair, item, onBack, togglePurchased, updateIt
 
 function StockPage({ consumeItem, error, items, restoreItem, status }: StockPageProps) {
   const [filter, setFilter] = useState<"in_stock" | "consumed">("in_stock");
+  const [backPressed, setBackPressed] = useState(false);
   const inStockItems = items.filter((item) => item.status === "in_stock");
   const consumedItems = items.filter((item) => item.status === "consumed");
   const visibleItems = filter === "in_stock" ? inStockItems : consumedItems;
   const totalInStock = inStockItems.reduce((sum, item) => sum + item.totalPrice, 0);
+  const handleBack = () => {
+    if (backPressed) {
+      return;
+    }
+
+    triggerHaptic("selection");
+    setBackPressed(true);
+    window.setTimeout(() => {
+      window.location.hash = "feiras";
+    }, 140);
+  };
 
   return (
     <section className="stock-page" aria-label="Estoque">
       <header className="stock-header">
+        <button className={backPressed ? "icon-button screen-back-button is-leaving" : "icon-button screen-back-button"} type="button" aria-label="Voltar" onClick={handleBack}>
+          <ArrowLeft size={19} />
+        </button>
         <div>
           <small>Produtos comprados</small>
           <h1>Estoque</h1>
