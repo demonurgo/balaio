@@ -807,6 +807,7 @@ type ProductPageProps = {
 
 type ItemField = "name" | "price" | "quantity";
 type ItemSortMode = "manual" | "category" | "priceAsc" | "priceDesc";
+type CategoryChartMode = "value" | "quantity";
 type SwipeLock = "scroll" | "swipe" | null;
 type SwipeState = {
   pointerId: number;
@@ -821,6 +822,7 @@ type SwipeState = {
 const SWIPE_START_DISTANCE = 8;
 const SWIPE_DELETE_DISTANCE = 118;
 const SWIPE_REVEAL_DISTANCE = 126;
+const CATEGORY_CHART_MODE_STORAGE_KEY = "balaio.categoryChartMode";
 const CATEGORY_COLORS = ["#f4b36a", "#f29b73", "#ef8f8f", "#9ec3f1", "#f6d957", "#c7df8f", "#82c7dc", "#f2a0a1", "#f0a9ce", "#8fd3c7", "#d8d6cf"];
 const CATEGORY_OPTIONS = ["Carnes", "Legumes", "Frutas", "Bebidas", "Lanches", "Laticínios", "Peixes", "Doces", "Mercearia", "Limpeza", "Outros"];
 const CATEGORY_META = [
@@ -1200,14 +1202,18 @@ function getCategoryColor(label: string, index: number) {
   return getCategoryMeta(label)?.color ?? CATEGORY_COLORS[index % CATEGORY_COLORS.length];
 }
 
-function getCategoryBreakdown(items: FairItem[]) {
+function getStoredCategoryChartMode(): CategoryChartMode {
+  return window.localStorage.getItem(CATEGORY_CHART_MODE_STORAGE_KEY) === "quantity" ? "quantity" : "value";
+}
+
+function getCategoryBreakdown(items: FairItem[], mode: CategoryChartMode) {
   const totals = new Map<string, { label: string; value: number; count: number }>();
 
   items.forEach((item) => {
     const label = getCategoryLabel(item);
     const key = label.toLowerCase();
     const current = totals.get(key) ?? { label, value: 0, count: 0 };
-    current.value += item.totalPrice;
+    current.value += mode === "quantity" ? item.quantity : item.totalPrice;
     current.count += 1;
     totals.set(key, current);
   });
@@ -1227,7 +1233,8 @@ function FairPage({ deleteFair, deleteItem, fair, items, createItem, onBack, onO
   const purchasedItems = items.filter((item) => item.purchased);
   const purchasedTotal = purchasedItems.reduce((sum, item) => sum + item.totalPrice, 0);
   const pendingTotal = items.filter((item) => !item.purchased).reduce((sum, item) => sum + item.totalPrice, 0);
-  const categoryBreakdown = useMemo(() => getCategoryBreakdown(items), [items]);
+  const [categoryChartMode, setCategoryChartMode] = useState<CategoryChartMode>(getStoredCategoryChartMode);
+  const categoryBreakdown = useMemo(() => getCategoryBreakdown(items, categoryChartMode), [categoryChartMode, items]);
   const categoryColorByLabel = useMemo(
     () => new Map(categoryBreakdown.categories.map((category) => [category.label.toLowerCase(), category.color])),
     [categoryBreakdown.categories]
@@ -1320,6 +1327,13 @@ function FairPage({ deleteFair, deleteItem, fair, items, createItem, onBack, onO
   const changeSortMode = (mode: ItemSortMode) => {
     triggerHaptic("selection");
     setItemSortMode(mode);
+    setFairActionsOpen(false);
+  };
+
+  const changeCategoryChartMode = (mode: CategoryChartMode) => {
+    triggerHaptic("selection");
+    setCategoryChartMode(mode);
+    window.localStorage.setItem(CATEGORY_CHART_MODE_STORAGE_KEY, mode);
     setFairActionsOpen(false);
   };
 
@@ -1427,6 +1441,12 @@ function FairPage({ deleteFair, deleteItem, fair, items, createItem, onBack, onO
                 <button className={itemSortMode === "priceDesc" ? "active" : ""} type="button" onClick={() => changeSortMode("priceDesc")}>
                   Maior preço
                 </button>
+                <button className={categoryChartMode === "value" ? "active" : ""} type="button" onClick={() => changeCategoryChartMode("value")}>
+                  GrÃ¡fico por valor
+                </button>
+                <button className={categoryChartMode === "quantity" ? "active" : ""} type="button" onClick={() => changeCategoryChartMode("quantity")}>
+                  GrÃ¡fico por quantidade
+                </button>
                 <button className="danger" type="button" onClick={() => void deleteCurrentFair()}>
                   Excluir feira
                 </button>
@@ -1482,7 +1502,7 @@ function FairPage({ deleteFair, deleteItem, fair, items, createItem, onBack, onO
         </span>
       </div>
 
-      <CategoryRingChart categories={categoryBreakdown.categories} total={categoryBreakdown.total} />
+      <CategoryRingChart categories={categoryBreakdown.categories} mode={categoryChartMode} total={categoryBreakdown.total} />
 
       {showNewItem ? (
         <form
@@ -1609,7 +1629,7 @@ type FairTodoRowProps = {
 };
 type CategoryBreakdownItem = ReturnType<typeof getCategoryBreakdown>["categories"][number];
 
-function CategoryRingChart({ categories, total }: { categories: CategoryBreakdownItem[]; total: number }) {
+function CategoryRingChart({ categories, mode, total }: { categories: CategoryBreakdownItem[]; mode: CategoryChartMode; total: number }) {
   const leading = categories[0];
   const [activeCategory, setActiveCategory] = useState<CategoryBreakdownItem | null>(null);
   const radius = 76;
@@ -1632,7 +1652,8 @@ function CategoryRingChart({ categories, total }: { categories: CategoryBreakdow
       iconY: 110 + Math.sin((angle * Math.PI) / 180) * iconRadius
     };
   });
-  const displayedCategory = activeCategory ?? leading;
+  const displayedCategory = (activeCategory ? categories.find((category) => category.label === activeCategory.label) : null) ?? leading;
+  const displayedValue = displayedCategory?.value ?? total;
 
   return (
     <section className="category-ring-card" aria-label="Distribuição por categoria">
@@ -1680,7 +1701,7 @@ function CategoryRingChart({ categories, total }: { categories: CategoryBreakdow
         <div className="category-ring-center" key={displayedCategory?.label ?? "empty"}>
           <strong>{displayedCategory ? `${displayedCategory.percent}%` : "0%"}</strong>
           <span>{displayedCategory ? displayedCategory.label : "adicione categorias"}</span>
-          <small>{formatCurrency(displayedCategory?.value ?? total)}</small>
+          <small>{mode === "quantity" ? `${formatQuantity(displayedValue)} un.` : formatCurrency(displayedValue)}</small>
         </div>
       </div>
 
