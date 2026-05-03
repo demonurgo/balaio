@@ -54,7 +54,16 @@ const itemCreateSchema = z.object({
   imageUrl: z.string().max(1_500_000).nullable().optional()
 });
 
-const itemUpdateSchema = itemCreateSchema.partial();
+const itemUpdateSchema = z.object({
+  name: z.string().trim().min(1).max(160).optional(),
+  quantity: z.number().min(0.01).max(9999).optional(),
+  unit: z.string().trim().min(1).max(24).optional(),
+  unitPrice: z.number().min(0).max(999999).optional(),
+  purchased: z.boolean().optional(),
+  category: z.string().trim().max(80).nullable().optional(),
+  notes: z.string().trim().max(4000).nullable().optional(),
+  imageUrl: z.string().max(1_500_000).nullable().optional()
+});
 
 type DbFair = typeof fairs.$inferSelect;
 type DbItem = typeof fairItems.$inferSelect;
