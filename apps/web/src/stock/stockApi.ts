@@ -1,4 +1,4 @@
-import { apiGet, apiPatch } from "../lib/api";
+import { apiDelete, apiGet, apiPatch } from "../lib/api";
 
 export type StockStatus = "in_stock" | "consumed";
 
@@ -35,6 +35,10 @@ export function updateStockItem(stockItemId: string, values: StockItemPatch) {
 
 export function consumeStockItem(stockItemId: string) {
   return apiPatch<{ data: StockItemDto }>(`/api/stock/${stockItemId}/consume`, {});
+}
+
+export function deleteStockItem(stockItemId: string) {
+  return apiDelete<{ ok: true }>(`/api/stock/${stockItemId}`);
 }
 
 export function restoreStockItem(stockItemId: string) {

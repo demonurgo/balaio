@@ -113,18 +113,83 @@ export async function registerStockRoutes(app: FastifyInstance, io: RealtimeServ
       return reply.code(400).send({ message: "Item de estoque inválido." });
     }
 
-    const [item] = await db
-      .update(stockItems)
-      .set({ status: "consumed", consumedAt: new Date(), consumedBy: userId, updatedAt: new Date() })
+    const current = await db
+      .select()
+      .from(stockItems)
       .where(and(eq(stockItems.id, params.data.stockItemId), eq(stockItems.userId, userId)))
-      .returning();
+      .limit(1);
 
-    if (!item) {
+    if (!current[0]) {
       return reply.code(404).send({ message: "Item de estoque não encontrado." });
     }
 
+    const currentQuantity = toNumber(current[0].quantity);
+    const unitPrice = toNumber(current[0].unitPrice);
+    const consumedAt = new Date();
+    let item: DbStockItem | undefined;
+
+    if (currentQuantity > 1) {
+      const nextQuantity = Number((currentQuantity - 1).toFixed(2));
+      const [updated] = await db
+        .update(stockItems)
+        .set({
+          quantity: toDbNumber(nextQuantity),
+          totalPrice: toDbNumber(nextQuantity * unitPrice),
+          updatedAt: consumedAt
+        })
+        .where(and(eq(stockItems.id, params.data.stockItemId), eq(stockItems.userId, userId)))
+        .returning();
+
+      await db.insert(stockItems).values({
+        userId,
+        sourceFairId: current[0].sourceFairId,
+        sourceFairItemId: null,
+        name: current[0].name,
+        quantity: "1.00",
+        unit: current[0].unit,
+        unitPrice: current[0].unitPrice,
+        totalPrice: current[0].unitPrice,
+        category: current[0].category,
+        notes: current[0].notes,
+        imageUrl: current[0].imageUrl,
+        status: "consumed",
+        consumedBy: userId,
+        consumedAt,
+        updatedAt: consumedAt
+      });
+
+      item = updated;
+    } else {
+      const [updated] = await db
+        .update(stockItems)
+        .set({ status: "consumed", consumedAt, consumedBy: userId, updatedAt: consumedAt })
+        .where(and(eq(stockItems.id, params.data.stockItemId), eq(stockItems.userId, userId)))
+        .returning();
+
+      item = updated;
+    }
+
     io.emit("stock:updated", { changedBy: userId });
-    return { data: toStockDto(item, null, null) };
+    return { data: toStockDto(item ?? current[0], null, null) };
+  });
+
+  app.delete("/api/stock/:stockItemId", async (request, reply) => {
+    const userId = await requireUser(app, request, reply);
+
+    if (!userId) {
+      return;
+    }
+
+    const params = stockItemParamsSchema.safeParse(request.params);
+
+    if (!params.success) {
+      return reply.code(400).send({ message: "Item de estoque inválido." });
+    }
+
+    await db.delete(stockItems).where(and(eq(stockItems.id, params.data.stockItemId), eq(stockItems.userId, userId)));
+
+    io.emit("stock:updated", { changedBy: userId });
+    return { ok: true };
   });
 
   app.patch("/api/stock/:stockItemId/restore", async (request, reply) => {

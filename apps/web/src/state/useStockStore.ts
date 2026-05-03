@@ -30,6 +30,7 @@ type StockState = {
   loadStock: () => Promise<void>;
   updateItem: (stockItemId: string, input: stockApi.StockItemPatch) => Promise<void>;
   consumeItem: (stockItemId: string) => Promise<void>;
+  deleteItem: (stockItemId: string) => Promise<void>;
   restoreItem: (stockItemId: string) => Promise<void>;
 };
 
@@ -64,6 +65,14 @@ export const useStockStore = create<StockState>((set) => ({
 
     set((state) => ({
       items: state.items.map((current) => (current.id === item.id ? item : current))
+    }));
+  },
+
+  deleteItem: async (stockItemId) => {
+    await stockApi.deleteStockItem(stockItemId);
+
+    set((state) => ({
+      items: state.items.filter((current) => current.id !== stockItemId)
     }));
   },
 

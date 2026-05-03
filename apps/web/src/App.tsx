@@ -122,6 +122,7 @@ function App() {
   const loadStock = useStockStore((state) => state.loadStock);
   const updateStockItem = useStockStore((state) => state.updateItem);
   const consumeStockItem = useStockStore((state) => state.consumeItem);
+  const deleteStockItem = useStockStore((state) => state.deleteItem);
   const restoreStockItem = useStockStore((state) => state.restoreItem);
   const selectedFair = fairs.find((fair) => fair.id === selectedFairId) ?? fairs[0] ?? emptyFair;
   const latestFairs = useMemo(() => fairs.slice(0, 3), [fairs]);
@@ -376,7 +377,7 @@ function App() {
           />
         ) : view === "estoque-produto" && routeStockItem ? (
           <StockProductPage
-            consumeItem={consumeStockItem}
+            deleteItem={deleteStockItem}
             item={routeStockItem}
             key={routeStockItem.id}
             onBack={() => {
@@ -389,6 +390,7 @@ function App() {
         ) : view === "estoque" ? (
           <StockPage
             consumeItem={consumeStockItem}
+            deleteItem={deleteStockItem}
             error={stockError}
             items={stockItems}
             onOpenProduct={(stockItemId) => {
@@ -758,6 +760,7 @@ type ProfilePageProps = {
 
 type StockPageProps = {
   consumeItem: (stockItemId: string) => Promise<void>;
+  deleteItem: (stockItemId: string) => Promise<void>;
   error: string;
   items: StockItem[];
   onOpenProduct: (stockItemId: string) => void;
@@ -766,7 +769,7 @@ type StockPageProps = {
 };
 
 type StockProductPageProps = {
-  consumeItem: (stockItemId: string) => Promise<void>;
+  deleteItem: (stockItemId: string) => Promise<void>;
   item: StockItem;
   onBack: () => void;
   restoreItem: (stockItemId: string) => Promise<void>;
@@ -2208,7 +2211,7 @@ function ProductPage({ deleteItem, fair, item, onBack, togglePurchased, updateIt
   );
 }
 
-function StockProductPage({ consumeItem, item, onBack, restoreItem, updateItem }: StockProductPageProps) {
+function StockProductPage({ deleteItem, item, onBack, restoreItem, updateItem }: StockProductPageProps) {
   const categoryOptions = useMemo(() => {
     const currentCategory = item.category?.trim();
 
@@ -2344,12 +2347,12 @@ function StockProductPage({ consumeItem, item, onBack, restoreItem, updateItem }
           className={item.status === "consumed" ? "product-delete restore" : "product-delete"}
           type="button"
           onClick={() => {
-            triggerHaptic(item.status === "consumed" ? "selection" : "warning");
-            void (item.status === "consumed" ? restoreItem(item.id) : consumeItem(item.id)).then(onBack);
+            triggerHaptic(item.status === "consumed" ? "selection" : "error");
+            void (item.status === "consumed" ? restoreItem(item.id) : deleteItem(item.id)).then(onBack);
           }}
         >
           {item.status === "consumed" ? <Check size={17} /> : <Trash2 size={17} />}
-          {item.status === "consumed" ? "Voltar" : "Consumir"}
+          {item.status === "consumed" ? "Voltar" : "Excluir"}
         </button>
       </div>
     </section>
@@ -2453,7 +2456,7 @@ function getStockCategoryBreakdown(items: StockItem[]) {
   return { categories, total };
 }
 
-function StockPage({ consumeItem, error, items, onOpenProduct, restoreItem, status }: StockPageProps) {
+function StockPage({ consumeItem, deleteItem, error, items, onOpenProduct, restoreItem, status }: StockPageProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [showConsumed, setShowConsumed] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -2557,7 +2560,7 @@ function StockPage({ consumeItem, error, items, onOpenProduct, restoreItem, stat
           </div>
         ) : null}
         {visibleItems.map((item) => (
-          <StockRow consumeItem={consumeItem} item={item} key={item.id} onOpenDetail={() => onOpenProduct(item.id)} restoreItem={restoreItem} />
+          <StockRow consumeItem={consumeItem} deleteItem={deleteItem} item={item} key={item.id} onOpenDetail={() => onOpenProduct(item.id)} restoreItem={restoreItem} />
         ))}
       </div>
 
@@ -2576,7 +2579,7 @@ function StockPage({ consumeItem, error, items, onOpenProduct, restoreItem, stat
               </div>
             ) : null}
             {consumedItems.map((item) => (
-              <StockRow consumeItem={consumeItem} item={item} key={item.id} onOpenDetail={() => onOpenProduct(item.id)} restoreItem={restoreItem} />
+              <StockRow consumeItem={consumeItem} deleteItem={deleteItem} item={item} key={item.id} onOpenDetail={() => onOpenProduct(item.id)} restoreItem={restoreItem} />
             ))}
           </div>
         </section>
@@ -2587,11 +2590,13 @@ function StockPage({ consumeItem, error, items, onOpenProduct, restoreItem, stat
 
 function StockRow({
   consumeItem,
+  deleteItem,
   item,
   onOpenDetail,
   restoreItem
 }: {
   consumeItem: (stockItemId: string) => Promise<void>;
+  deleteItem: (stockItemId: string) => Promise<void>;
   item: StockItem;
   onOpenDetail: () => void;
   restoreItem: (stockItemId: string) => Promise<void>;
@@ -2763,7 +2768,7 @@ function StockRow({
     setSwipeX(0);
   };
 
-  const consumeFromSwipe = () => {
+  const deleteFromSwipe = () => {
     const exitDistance = -Math.min(window.innerWidth || 360, 520);
 
     swipe.current = null;
@@ -2776,7 +2781,7 @@ function StockRow({
     triggerHaptic("error");
 
     window.setTimeout(() => {
-      void consumeItem(item.id).catch(() => {
+      void deleteItem(item.id).catch(() => {
         setIsRemoving(false);
         setSwipeArmed(false);
         setSwipeX(0);
@@ -2785,7 +2790,7 @@ function StockRow({
     }, 150);
   };
 
-  const shouldConsumeSwipe = (currentSwipe: SwipeState) => {
+  const shouldDeleteSwipe = (currentSwipe: SwipeState) => {
     return currentSwipe.armed || currentSwipe.rawX >= SWIPE_DELETE_DISTANCE || currentSwipe.visualX >= SWIPE_REVEAL_DISTANCE * 0.9;
   };
 
@@ -2811,8 +2816,8 @@ function StockRow({
     event?.preventDefault();
     suppressNextClick();
 
-    if (shouldConsumeSwipe(currentSwipe)) {
-      consumeFromSwipe();
+    if (shouldDeleteSwipe(currentSwipe)) {
+      deleteFromSwipe();
       return;
     }
 
@@ -2824,9 +2829,9 @@ function StockRow({
   const cancelPointer = (event: PointerEvent<HTMLDivElement>) => {
     const currentSwipe = swipe.current;
 
-    if (currentSwipe?.lock === "swipe" && shouldConsumeSwipe(currentSwipe)) {
+    if (currentSwipe?.lock === "swipe" && shouldDeleteSwipe(currentSwipe)) {
       releaseSwipePointer(event.pointerId);
-      consumeFromSwipe();
+      deleteFromSwipe();
       return;
     }
 
@@ -2857,7 +2862,7 @@ function StockRow({
       {item.status === "in_stock" ? (
         <div className="todo-delete-action stock-delete-action" aria-hidden="true">
           <Trash2 size={18} />
-          <span>Consumir</span>
+          <span>Deletar</span>
         </div>
       ) : null}
       <article
