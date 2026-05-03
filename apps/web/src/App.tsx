@@ -680,10 +680,6 @@ function App() {
           <ShoppingBasket size={22} />
           <span>Feiras</span>
         </a>
-        <a className={view === "orcamento" ? "bottom-tab active" : "bottom-tab"} href="#orcamento" onClick={() => triggerHaptic("selection")}>
-          <Wallet size={22} />
-          <span>Orçamento</span>
-        </a>
         <a className={view === "estoque" ? "bottom-tab active" : "bottom-tab"} href="#estoque" onClick={() => triggerHaptic("selection")}>
           <Store size={22} />
           <span>Estoque</span>
@@ -1088,10 +1084,8 @@ function DashboardFairRow({ deleteFair, fair, isActive, onOpen, progress }: Dash
         >
           <span>
             <strong>{fair.label}</strong>
-            <small>{fair.memberCount} pessoas</small>
           </span>
           <span className="money-block">
-            <small>Total</small>
             <strong>{formatCurrency(fair.total)}</strong>
           </span>
           <span className="progress-track" aria-hidden="true">
@@ -2183,7 +2177,7 @@ function ProductPage({ deleteItem, fair, item, onBack, togglePurchased, updateIt
 
 type StockCategoryBreakdownItem = ReturnType<typeof getStockCategoryBreakdown>["categories"][number];
 
-function StockCategoryRingChart({ categories, total }: { categories: StockCategoryBreakdownItem[]; total: number }) {
+function StockCategoryRingChart({ categories }: { categories: StockCategoryBreakdownItem[]; total: number }) {
   const leading = categories[0];
   const [activeCategory, setActiveCategory] = useState<StockCategoryBreakdownItem | null>(null);
   const radius = 76;
@@ -2245,8 +2239,8 @@ function StockCategoryRingChart({ categories, total }: { categories: StockCatego
 
         <div className="category-ring-center" key={displayedCategory?.label ?? "stock-empty"}>
           <strong>{displayedCategory ? `${displayedCategory.percent}%` : "0%"}</strong>
-          <span>{displayedCategory ? displayedCategory.label : "sem estoque"}</span>
-          <small>{displayedCategory ? `${formatQuantity(displayedCategory.value)} un.` : `${formatQuantity(total)} un.`}</small>
+          {displayedCategory ? <span>{displayedCategory.label}</span> : null}
+          {displayedCategory ? <small>{`${formatQuantity(displayedCategory.value)} un.`}</small> : null}
         </div>
       </div>
     </section>
@@ -2279,8 +2273,10 @@ function getStockCategoryBreakdown(items: StockItem[]) {
 function StockPage({ consumeItem, error, items, restoreItem, status }: StockPageProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [showConsumed, setShowConsumed] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [backPressed, setBackPressed] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const inStockItems = items.filter((item) => item.status === "in_stock");
   const consumedItems = items.filter((item) => item.status === "consumed");
   const normalizedQuery = normalizeCategoryLabel(query);
@@ -2312,11 +2308,9 @@ function StockPage({ consumeItem, error, items, restoreItem, status }: StockPage
           <ArrowLeft size={19} />
         </button>
         <div>
-          <small>Produtos comprados</small>
           <h1>Estoque</h1>
         </div>
         <div className="stock-total">
-          <small>Total em estoque</small>
           <strong>{formatCurrency(totalInStock)}</strong>
         </div>
         <div className="fair-menu">
@@ -2352,14 +2346,21 @@ function StockPage({ consumeItem, error, items, restoreItem, status }: StockPage
 
       <StockCategoryRingChart categories={stockBreakdown.categories} total={stockBreakdown.total} />
 
-      <label className="stock-search">
-        <Search size={17} />
-        <input value={query} placeholder="Buscar no estoque" onChange={(event) => setQuery(event.target.value)} />
-      </label>
-
       <div className="stock-summary-line">
         <strong>Em estoque</strong>
-        <span>{inStockItems.length} produtos</span>
+        <label className={searchOpen ? "stock-search open" : "stock-search"}>
+          <Search size={17} />
+          <input ref={searchInputRef} value={query} placeholder="Buscar" onChange={(event) => setQuery(event.target.value)} />
+          <button
+            type="button"
+            aria-label="Pesquisar produtos"
+            onClick={() => {
+              triggerHaptic("selection");
+              setSearchOpen(true);
+              window.setTimeout(() => searchInputRef.current?.focus(), 80);
+            }}
+          />
+        </label>
       </div>
 
       <div className="stock-list">

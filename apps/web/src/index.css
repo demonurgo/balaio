@@ -447,8 +447,8 @@ h2 {
 
 .money-block {
   display: grid;
+  align-items: center;
   justify-items: end;
-  gap: 3px;
 }
 
 .progress-track {
@@ -1730,34 +1730,64 @@ h2 {
 }
 
 .stock-search {
+  position: relative;
   display: grid;
   grid-template-columns: 20px minmax(0, 1fr);
   align-items: center;
   gap: 8px;
-  min-height: 44px;
-  padding: 0 14px;
+  width: 40px;
+  min-height: 40px;
+  padding: 0 11px;
   border: 1px solid var(--color-border);
   border-radius: 999px;
   color: var(--color-muted);
   background: color-mix(in srgb, var(--color-elevated) 72%, transparent);
+  transition: width 260ms cubic-bezier(0.16, 1, 0.3, 1), border-color 180ms ease;
+}
+
+.stock-search.open {
+  width: min(190px, 48vw);
+  padding: 0 13px;
+  border-color: color-mix(in srgb, var(--color-primary) 48%, var(--color-border));
 }
 
 .stock-search input {
   width: 100%;
+  min-width: 0;
   border: 0;
   color: var(--color-text);
   background: transparent;
   font-weight: 800;
   outline: none;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 140ms ease;
+}
+
+.stock-search.open input {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .stock-search input::placeholder {
   color: var(--color-muted);
 }
 
+.stock-search button {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+}
+
+.stock-search.open button {
+  display: none;
+}
+
 .stock-summary-line {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
@@ -2530,7 +2560,7 @@ h2 {
   .fair-row > span:first-child {
     display: grid;
     gap: 5px;
-    align-self: start;
+    align-self: center;
     padding-right: 140px;
   }
 
@@ -2547,10 +2577,10 @@ h2 {
 
   .money-block {
     position: absolute;
-    top: 1px;
+    top: 0;
     right: 0;
+    bottom: 18px;
     padding-top: 2px;
-    gap: 5px;
   }
 
   .money-block strong {
@@ -2962,7 +2992,7 @@ h2 {
     bottom: 20px;
     z-index: 20;
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     min-height: 66px;
     padding: 8px 10px;
     border: 1px solid color-mix(in srgb, var(--color-border) 76%, transparent);
