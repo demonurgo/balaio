@@ -1649,7 +1649,7 @@ function CategoryRingChart({ categories, mode, total }: { categories: CategoryBr
   const circumference = 2 * Math.PI * radius;
   const gap = categories.length > 1 ? 40 : 0;
   const available = circumference - gap * categories.length;
-  const getDash = (category: CategoryBreakdownItem) => (category.percent / 100) * available;
+  const getDash = (category: CategoryBreakdownItem) => (total > 0 ? category.value / total : 0) * available;
   const segments = categories.map((category, index) => {
     const dash = getDash(category);
     const offset = categories.slice(0, index).reduce((sum, current) => sum + getDash(current) + gap, 0);
@@ -2542,14 +2542,14 @@ function StockProductPage({ deleteItem, item, onBack, restoreItem, updateItem }:
 
 type StockCategoryBreakdownItem = ReturnType<typeof getStockCategoryBreakdown>["categories"][number];
 
-function StockCategoryRingChart({ categories }: { categories: StockCategoryBreakdownItem[]; total: number }) {
+function StockCategoryRingChart({ categories, total }: { categories: StockCategoryBreakdownItem[]; total: number }) {
   const leading = categories[0];
   const [activeCategory, setActiveCategory] = useState<StockCategoryBreakdownItem | null>(null);
   const radius = 76;
   const circumference = 2 * Math.PI * radius;
   const gap = categories.length > 1 ? 40 : 0;
   const available = circumference - gap * categories.length;
-  const getDash = (category: StockCategoryBreakdownItem) => (category.percent / 100) * available;
+  const getDash = (category: StockCategoryBreakdownItem) => (total > 0 ? category.value / total : 0) * available;
   const segments = categories.map((category, index) => {
     const dash = getDash(category);
     const offset = categories.slice(0, index).reduce((sum, current) => sum + getDash(current) + gap, 0);
