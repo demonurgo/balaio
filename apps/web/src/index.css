@@ -1432,7 +1432,28 @@ h2 {
 }
 
 .todo-price-button {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
   font-size: 14px;
+  text-align: right;
+  touch-action: manipulation;
+}
+
+.todo-price-button small {
+  color: var(--color-muted);
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.todo-price-button.total-mode {
+  color: var(--color-primary);
+}
+
+.todo-price-button.total-mode small {
+  color: color-mix(in srgb, var(--color-primary) 78%, var(--color-muted));
 }
 
 .todo-qty-button {

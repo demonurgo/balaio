@@ -1734,6 +1734,7 @@ function FairTodoRow({ categoryColor, deleteItem, item, onOpenDetail, togglePurc
   const [isRemoving, setIsRemoving] = useState(false);
   const [swipeArmed, setSwipeArmed] = useState(false);
   const pressTimer = useRef<number | null>(null);
+  const pricePressTimer = useRef<number | null>(null);
   const longPressFired = useRef(false);
   const swipe = useRef<SwipeState | null>(null);
   const swipeElement = useRef<HTMLDivElement | null>(null);
@@ -1744,6 +1745,12 @@ function FairTodoRow({ categoryColor, deleteItem, item, onOpenDetail, togglePurc
   useEffect(() => {
     return () => {
       detachGlobalSwipe.current?.();
+      if (pricePressTimer.current) {
+        window.clearTimeout(pricePressTimer.current);
+      }
+      if (suppressClickTimer.current) {
+        window.clearTimeout(suppressClickTimer.current);
+      }
     };
   }, []);
 
@@ -1751,6 +1758,13 @@ function FairTodoRow({ categoryColor, deleteItem, item, onOpenDetail, togglePurc
     if (pressTimer.current) {
       window.clearTimeout(pressTimer.current);
       pressTimer.current = null;
+    }
+  };
+
+  const clearPricePress = () => {
+    if (pricePressTimer.current) {
+      window.clearTimeout(pricePressTimer.current);
+      pricePressTimer.current = null;
     }
   };
 
@@ -1803,7 +1817,7 @@ function FairTodoRow({ categoryColor, deleteItem, item, onOpenDetail, togglePurc
       return;
     }
 
-    if ((event.target as HTMLElement).closest("input")) {
+    if ((event.target as HTMLElement).closest("input, .todo-price-button")) {
       return;
     }
 
@@ -1817,7 +1831,7 @@ function FairTodoRow({ categoryColor, deleteItem, item, onOpenDetail, togglePurc
       armed: false
     };
 
-    if ((event.target as HTMLElement).closest(".item-check-button, input")) {
+    if ((event.target as HTMLElement).closest(".item-check-button, .todo-price-button, input")) {
       return;
     }
 
@@ -2039,6 +2053,45 @@ function FairTodoRow({ categoryColor, deleteItem, item, onOpenDetail, togglePurc
     swipeX !== 0 || isSwiping || isRemoving
       ? ({ transform: `translate3d(${swipeX}px, 0, 0)` } as CSSProperties)
       : undefined;
+  const priceModeLabel = item.pricingMode === "total" ? "total" : "por und";
+  const displayedPrice = item.pricingMode === "total" ? item.totalPrice : item.unitPrice;
+  const priceButtonClassName = item.pricingMode === "total" ? "todo-price-button total-mode" : "todo-price-button";
+
+  const togglePricingMode = () => {
+    const pricingMode: PricingMode = item.pricingMode === "total" ? "unit" : "total";
+
+    triggerHaptic("medium");
+    suppressNextClick();
+    void updateItem(item.id, { pricingMode, unitPrice: displayedPrice });
+  };
+
+  const startPricePress = (event: PointerEvent<HTMLButtonElement>) => {
+    if ((event.pointerType === "mouse" && event.button !== 0) || editing === "price" || isRemoving) {
+      return;
+    }
+
+    clearPricePress();
+    longPressFired.current = false;
+    pricePressTimer.current = window.setTimeout(() => {
+      pricePressTimer.current = null;
+      longPressFired.current = true;
+      togglePricingMode();
+    }, 520);
+  };
+
+  const endPricePress = () => {
+    clearPricePress();
+  };
+
+  const handlePriceClick = () => {
+    if (longPressFired.current || suppressClick.current) {
+      longPressFired.current = false;
+      suppressClick.current = false;
+      return;
+    }
+
+    startEdit("price");
+  };
 
   return (
     <div
@@ -2106,8 +2159,18 @@ function FairTodoRow({ categoryColor, deleteItem, item, onOpenDetail, togglePurc
               onKeyDown={(event) => handleFieldKey(event, "price")}
             />
           ) : (
-            <button className="todo-price-button" type="button" onClick={() => startEdit("price")}>
-              {formatCurrency(item.pricingMode === "total" ? item.totalPrice : item.unitPrice)}
+            <button
+              className={priceButtonClassName}
+              type="button"
+              aria-label={`Preco ${priceModeLabel}. Segure para alternar.`}
+              onClick={handlePriceClick}
+              onPointerCancel={endPricePress}
+              onPointerDown={startPricePress}
+              onPointerLeave={endPricePress}
+              onPointerUp={endPricePress}
+            >
+              <span>{formatCurrency(displayedPrice)}</span>
+              <small>{priceModeLabel}</small>
             </button>
           )}
         </div>
