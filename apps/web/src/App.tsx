@@ -2640,6 +2640,7 @@ function getStockCategoryBreakdown(items: StockItem[]) {
 function StockPage({ consumeItem, deleteItem, error, items, onOpenProduct, restoreItem, status }: StockPageProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [showConsumed, setShowConsumed] = useState(false);
+  const [sortByCategory, setSortByCategory] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [backPressed, setBackPressed] = useState(false);
@@ -2653,6 +2654,14 @@ function StockPage({ consumeItem, deleteItem, error, items, onOpenProduct, resto
     }
 
     return normalizeCategoryLabel(`${item.name} ${item.category}`).includes(normalizedQuery);
+  }).toSorted((first, second) => {
+    if (!sortByCategory) {
+      return 0;
+    }
+
+    const firstCategory = getCategoryMeta(first.category || first.name)?.label ?? (first.category || "Outros");
+    const secondCategory = getCategoryMeta(second.category || second.name)?.label ?? (second.category || "Outros");
+    return firstCategory.localeCompare(secondCategory, "pt-BR") || first.name.localeCompare(second.name, "pt-BR");
   });
   const stockBreakdown = getStockCategoryBreakdown(inStockItems);
   const totalInStock = inStockItems.reduce((sum, item) => sum + item.totalPrice, 0);
@@ -2695,6 +2704,17 @@ function StockPage({ consumeItem, deleteItem, error, items, onOpenProduct, resto
           </button>
           {menuOpen ? (
             <div className="fair-menu-popover stock-menu-popover">
+              <button
+                className={sortByCategory ? "active" : ""}
+                type="button"
+                onClick={() => {
+                  triggerHaptic("selection");
+                  setSortByCategory((current) => !current);
+                  setMenuOpen(false);
+                }}
+              >
+                Classificar por categoria
+              </button>
               <button
                 className={showConsumed ? "active" : ""}
                 type="button"

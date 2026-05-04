@@ -646,14 +646,14 @@ h2 {
 }
 
 .circle-center strong {
-  font-size: 16px;
+  font-size: 13px;
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
 
 .circle-center span {
   color: var(--color-muted);
-  font-size: 10px;
+  font-size: 9px;
   line-height: 1;
 }
 
