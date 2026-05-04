@@ -1647,7 +1647,7 @@ function CategoryRingChart({ categories, mode, total }: { categories: CategoryBr
   const [activeCategory, setActiveCategory] = useState<CategoryBreakdownItem | null>(null);
   const radius = 76;
   const circumference = 2 * Math.PI * radius;
-  const gap = categories.length > 1 ? 46 : 0;
+  const gap = categories.length > 1 ? 40 : 0;
   const available = circumference - gap * categories.length;
   const getDash = (category: CategoryBreakdownItem) => (category.percent / 100) * available;
   const segments = categories.map((category, index) => {
@@ -2547,7 +2547,7 @@ function StockCategoryRingChart({ categories }: { categories: StockCategoryBreak
   const [activeCategory, setActiveCategory] = useState<StockCategoryBreakdownItem | null>(null);
   const radius = 76;
   const circumference = 2 * Math.PI * radius;
-  const gap = categories.length > 1 ? 46 : 0;
+  const gap = categories.length > 1 ? 40 : 0;
   const available = circumference - gap * categories.length;
   const getDash = (category: StockCategoryBreakdownItem) => (category.percent / 100) * available;
   const segments = categories.map((category, index) => {
