@@ -163,7 +163,7 @@ function mapFair(fair: FairSummaryDto): Fair {
 function mapItem(item: FairItemDto): FairItem {
   return {
     ...item,
-    pricingMode: item.pricingMode === "total" ? "total" : "unit",
+    pricingMode: item.pricingMode === "unit" ? "unit" : "total",
     category: item.category ?? "",
     notes: item.notes ?? "",
     imageUrl: item.imageUrl ?? ""

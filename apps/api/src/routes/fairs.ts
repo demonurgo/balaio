@@ -47,7 +47,7 @@ const itemCreateSchema = z.object({
   name: z.string().trim().min(1).max(160),
   quantity: z.number().min(0.01).max(9999).default(1),
   unit: z.string().trim().min(1).max(24).default("un"),
-  pricingMode: z.enum(["unit", "total"]).default("unit"),
+  pricingMode: z.enum(["unit", "total"]).default("total"),
   unitPrice: z.number().min(0).max(999999).default(0),
   purchased: z.boolean().default(false),
   category: z.string().trim().max(80).nullable().optional(),
@@ -527,7 +527,7 @@ function toDbNumber(value: number) {
 }
 
 function getPricingMode(value: unknown) {
-  return value === "total" ? "total" : "unit";
+  return value === "unit" ? "unit" : "total";
 }
 
 function getItemPrices(quantity: number, priceInput: number, pricingMode: "unit" | "total") {

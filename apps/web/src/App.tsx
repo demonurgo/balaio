@@ -1265,7 +1265,7 @@ function FairPage({ deleteFair, deleteItem, fair, items, createItem, onBack, onO
   const [budgetDraft, setBudgetDraft] = useState(String(fair.budget).replace(".", ","));
   const [nameDraft, setNameDraft] = useState(fair.name);
   const [showNewItem, setShowNewItem] = useState(false);
-  const [newItem, setNewItem] = useState<{ category: string; name: string; price: string; pricingMode: PricingMode; quantity: string }>({ category: "Outros", name: "", price: "", pricingMode: "unit", quantity: "1" });
+  const [newItem, setNewItem] = useState<{ category: string; name: string; price: string; pricingMode: PricingMode; quantity: string }>({ category: "Outros", name: "", price: "", pricingMode: "total", quantity: "1" });
   const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [backPressed, setBackPressed] = useState(false);
@@ -1319,7 +1319,7 @@ function FairPage({ deleteFair, deleteItem, fair, items, createItem, onBack, onO
       unitPrice: parseMoneyInput(newItem.price),
       category: selectedNewItemCategory.label
     });
-    setNewItem({ category: "Outros", name: "", price: "", pricingMode: "unit", quantity: "1" });
+    setNewItem({ category: "Outros", name: "", price: "", pricingMode: "total", quantity: "1" });
     setCategoryPickerOpen(false);
     setShowNewItem(false);
     setSaving(false);
