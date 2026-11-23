@@ -4,6 +4,7 @@ Publicado em 2026-11-23: https://balaio.demonurgo.com
 
 - Área: `/srv/balaio` (`deploy/` com compose e `.env` restrito, `data/postgres`, `releases/<rev>/source`).
 - Código: branch `balaio` a partir de `558cc2d` (opção `TRUST_PROXY`).
+- 2026-11-23: release `3bfbec8-ios` (PR #1, branch `fase1-app-ios`) com a migração `0006_fair_invites`. Backup antes da migração em `/srv/balaio/backups/balaio-antes-3bfbec8-ios.sql.gz`; `compose.yaml` e `.env` anteriores em `deploy/*.bak-c38a5c1-proxy`. Reverter: `BALAIO_RELEASE=c38a5c1-proxy` e `docker compose up -d`.
 - Containers: `balaio_db` (Postgres 17), `balaio_api` (Fastify, `TRUST_PROXY=true`) e `balaio_web` (Caddy servindo o PWA e repassando `/api`, `/socket.io` e `/health`). Banco e API ficam só na rede interna `balaio_internal`.
 - O proxy `infra_caddy` entra pela rede `balaio_edge`; a rota está em `/srv/minhatirze/infra/caddy/Caddyfile` (backup `Caddyfile.bak-balaio-*`).
 - `.env` gerado no servidor: `BALAIO_RELEASE`, `BALAIO_DB_PASSWORD`, `BALAIO_JWT_SECRET`.
