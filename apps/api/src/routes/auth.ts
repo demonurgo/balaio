@@ -9,6 +9,7 @@ import {
   hasBearerToken,
   setSessionCookie
 } from "../auth/session.js";
+import { imageLink, resolveImageInput } from "../images.js";
 import { fairRoom, type RealtimeServer, userRoom } from "../realtime/index.js";
 
 function toPublicUser(user: AuthUserRecord) {
@@ -19,7 +20,7 @@ function toPublicUser(user: AuthUserRecord) {
     lastName: user.lastName,
     birthDate: user.birthDate,
     email: user.email,
-    imageUrl: user.imageUrl
+    imageUrl: imageLink("users", user.id, user.imageUrl, user.updatedAt)
   };
 }
 
@@ -203,7 +204,10 @@ export async function registerAuthRoutes(app: FastifyInstance, repository: AuthR
     }
 
     try {
-      const user = await repository.updateUser(userId, parsed.data);
+      const user = await repository.updateUser(userId, {
+        ...parsed.data,
+        imageUrl: resolveImageInput(parsed.data.imageUrl)
+      });
 
       if (!user) {
         clearSessionCookie(reply);

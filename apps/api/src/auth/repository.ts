@@ -11,6 +11,7 @@ export type AuthUserRecord = {
   email: string;
   imageUrl: string | null;
   passwordHash: string;
+  updatedAt?: Date;
 };
 
 export type CreateUserInput = {
@@ -52,7 +53,8 @@ const userColumns = {
   birthDate: users.birthDate,
   email: users.email,
   imageUrl: users.imageUrl,
-  passwordHash: users.passwordHash
+  passwordHash: users.passwordHash,
+  updatedAt: users.updatedAt
 };
 
 export function createDbAuthRepository(): AuthRepository {

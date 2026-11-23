@@ -8,6 +8,7 @@ import { db } from "../db/client.js";
 import { fairInvites, fairMembers, fairs, users } from "../db/schema.js";
 import { env } from "../env.js";
 import { getMembership } from "../fairs/membership.js";
+import { imageLink } from "../images.js";
 import { fairRoom, type RealtimeServer, userRoom } from "../realtime/index.js";
 
 const INVITE_DAYS = 7;
@@ -243,6 +244,7 @@ export async function registerInviteRoutes(app: FastifyInstance, io: RealtimeSer
         firstName: users.firstName,
         lastName: users.lastName,
         imageUrl: users.imageUrl,
+        updatedAt: users.updatedAt,
         role: fairMembers.role,
         joinedAt: fairMembers.createdAt
       })
@@ -257,7 +259,7 @@ export async function registerInviteRoutes(app: FastifyInstance, io: RealtimeSer
         name: row.name,
         firstName: row.firstName,
         lastName: row.lastName,
-        imageUrl: row.imageUrl,
+        imageUrl: imageLink("users", row.userId, row.imageUrl, row.updatedAt),
         role: row.role,
         isOwner: row.role === "owner",
         isMe: row.userId === userId,

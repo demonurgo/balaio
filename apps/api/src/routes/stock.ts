@@ -4,6 +4,7 @@ import { z } from "zod";
 import { requireUser } from "../auth/requireUser.js";
 import { db } from "../db/client.js";
 import { fairs, stockItems, users } from "../db/schema.js";
+import { imageLink, resolveImageInput } from "../images.js";
 import { type RealtimeServer, userRoom } from "../realtime/index.js";
 
 const stockItemParamsSchema = z.object({
@@ -84,7 +85,8 @@ export async function registerStockRoutes(app: FastifyInstance, io: RealtimeServ
     if (parsed.data.unitPrice !== undefined) patch.unitPrice = toDbNumber(parsed.data.unitPrice);
     if (parsed.data.category !== undefined) patch.category = parsed.data.category;
     if (parsed.data.notes !== undefined) patch.notes = parsed.data.notes;
-    if (parsed.data.imageUrl !== undefined) patch.imageUrl = parsed.data.imageUrl;
+    const imageUrl = resolveImageInput(parsed.data.imageUrl);
+    if (imageUrl !== undefined) patch.imageUrl = imageUrl;
 
     const [item] = await db
       .update(stockItems)
@@ -231,7 +233,7 @@ function toStockDto(item: DbStockItem, fairName: string | null, consumedByName: 
     totalPrice: toNumber(item.totalPrice),
     category: item.category,
     notes: item.notes,
-    imageUrl: item.imageUrl,
+    imageUrl: imageLink("stock", item.id, item.imageUrl, item.updatedAt),
     status: item.status,
     sourceFairId: item.sourceFairId,
     sourceFairItemId: item.sourceFairItemId,

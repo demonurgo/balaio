@@ -4,6 +4,7 @@ import { z } from "zod";
 import { requireUser } from "../auth/requireUser.js";
 import { db } from "../db/client.js";
 import { getMembership } from "../fairs/membership.js";
+import { imageLink, resolveImageInput } from "../images.js";
 import { fairItems, fairMembers, fairs, stockItems } from "../db/schema.js";
 import { fairRoom, type RealtimeServer, userRoom } from "../realtime/index.js";
 
@@ -193,6 +194,43 @@ export async function registerFairRoutes(app: FastifyInstance, io: RealtimeServe
     return { ok: true };
   });
 
+  app.get("/api/fairs/:fairId", async (request, reply) => {
+    const userId = await requireUser(app, request, reply);
+
+    if (!userId) {
+      return;
+    }
+
+    const params = fairParamsSchema.safeParse(request.params);
+
+    if (!params.success) {
+      return reply.code(400).send({ message: "Feira inválida." });
+    }
+
+    if (!(await getMembership(params.data.fairId, userId))) {
+      return reply.code(404).send({ message: "Feira não encontrada." });
+    }
+
+    const [fair] = await db.select().from(fairs).where(eq(fairs.id, params.data.fairId)).limit(1);
+
+    if (!fair) {
+      return reply.code(404).send({ message: "Feira não encontrada." });
+    }
+
+    const items = await db
+      .select()
+      .from(fairItems)
+      .where(eq(fairItems.fairId, fair.id))
+      .orderBy(fairItems.position, fairItems.createdAt);
+
+    return {
+      data: {
+        fair: await hydrateFairSummary(fair),
+        items: items.map(toItemDto)
+      }
+    };
+  });
+
   app.post("/api/fairs/:fairId/items", async (request, reply) => {
     const userId = await requireUser(app, request, reply);
 
@@ -231,7 +269,7 @@ export async function registerFairRoutes(app: FastifyInstance, io: RealtimeServe
         purchased: parsed.data.purchased,
         category: parsed.data.category ?? null,
         notes: parsed.data.notes ?? null,
-        imageUrl: parsed.data.imageUrl ?? null,
+        imageUrl: resolveImageInput(parsed.data.imageUrl) ?? null,
         position: Number(positionCount),
         updatedBy: userId
       })
@@ -299,7 +337,8 @@ export async function registerFairRoutes(app: FastifyInstance, io: RealtimeServe
     if (parsed.data.purchased !== undefined) patch.purchased = parsed.data.purchased;
     if (parsed.data.category !== undefined) patch.category = parsed.data.category;
     if (parsed.data.notes !== undefined) patch.notes = parsed.data.notes;
-    if (parsed.data.imageUrl !== undefined) patch.imageUrl = parsed.data.imageUrl;
+    const imageUrl = resolveImageInput(parsed.data.imageUrl);
+    if (imageUrl !== undefined) patch.imageUrl = imageUrl;
 
     const [item] = await db
       .update(fairItems)
@@ -476,7 +515,7 @@ function toItemDto(item: DbItem) {
     purchased: item.purchased,
     category: item.category,
     notes: item.notes,
-    imageUrl: item.imageUrl
+    imageUrl: imageLink("items", item.id, item.imageUrl, item.updatedAt)
   };
 }
 

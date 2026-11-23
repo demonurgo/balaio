@@ -11,6 +11,7 @@ import { createRealtime } from "./realtime/index.js";
 import { registerAuthRoutes } from "./routes/auth.js";
 import { registerFairRoutes } from "./routes/fairs.js";
 import { registerHealthRoutes } from "./routes/health.js";
+import { registerImageRoutes } from "./routes/images.js";
 import { registerInviteRoutes } from "./routes/invites.js";
 import { registerStockRoutes } from "./routes/stock.js";
 
@@ -68,6 +69,7 @@ export async function createApp(options: CreateAppOptions = {}) {
   await registerHealthRoutes(app);
   await registerAuthRoutes(app, authRepository, io);
   await registerFairRoutes(app, io);
+  await registerImageRoutes(app);
   await registerInviteRoutes(app, io);
   await registerStockRoutes(app, io);
 
