@@ -9,7 +9,9 @@ const envSchema = z.object({
   CORS_ORIGIN: z.string().min(1).default("http://localhost:5173"),
   JWT_SECRET: z.string().min(32).default("development-only-secret-change-before-prod"),
   AUTH_COOKIE_NAME: z.string().min(1).default("balaio_session"),
-  AUTH_SESSION_DAYS: z.coerce.number().int().positive().default(7)
+  AUTH_SESSION_DAYS: z.coerce.number().int().positive().default(7),
+  // Set to true only behind a reverse proxy, so rate limits use the visitor IP.
+  TRUST_PROXY: z.stringbool().default(false)
 });
 
 export const env = envSchema.parse(process.env);
