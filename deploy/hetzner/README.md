@@ -3,7 +3,7 @@
 Publicado em 2026-11-23: https://balaio.demonurgo.com
 
 - Área: `/srv/balaio` (`deploy/` com compose e `.env` restrito, `data/postgres`, `releases/<rev>/source`).
-- Código: commit `c38a5c1` do branch `balaio` com a opção `TRUST_PROXY`.
+- Código: branch `balaio` a partir de `558cc2d` (opção `TRUST_PROXY`).
 - Containers: `balaio_db` (Postgres 17), `balaio_api` (Fastify, `TRUST_PROXY=true`) e `balaio_web` (Caddy servindo o PWA e repassando `/api`, `/socket.io` e `/health`). Banco e API ficam só na rede interna `balaio_internal`.
 - O proxy `infra_caddy` entra pela rede `balaio_edge`; a rota está em `/srv/minhatirze/infra/caddy/Caddyfile` (backup `Caddyfile.bak-balaio-*`).
 - `.env` gerado no servidor: `BALAIO_RELEASE`, `BALAIO_DB_PASSWORD`, `BALAIO_JWT_SECRET`.
