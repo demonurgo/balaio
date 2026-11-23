@@ -5,7 +5,7 @@ import { requireUser } from "../auth/requireUser.js";
 import { db } from "../db/client.js";
 import { getMembership } from "../fairs/membership.js";
 import { fairItems, fairMembers, fairs, stockItems } from "../db/schema.js";
-import { fairRoom, type RealtimeServer } from "../realtime/index.js";
+import { fairRoom, type RealtimeServer, userRoom } from "../realtime/index.js";
 
 const monthNames = [
   "Janeiro",
@@ -243,7 +243,7 @@ export async function registerFairRoutes(app: FastifyInstance, io: RealtimeServe
 
     if (item.purchased) {
       await upsertStockItem(userId, item);
-      io.emit("stock:updated", { changedBy: userId });
+      io.to(userRoom(userId)).emit("stock:updated", { changedBy: userId });
     }
 
     io.to(fairRoom(params.data.fairId)).emit("item:created", { fairId: params.data.fairId, itemId: item.id });
@@ -313,7 +313,7 @@ export async function registerFairRoutes(app: FastifyInstance, io: RealtimeServe
 
     if (item.purchased) {
       await upsertStockItem(userId, item);
-      io.emit("stock:updated", { changedBy: userId });
+      io.to(userRoom(userId)).emit("stock:updated", { changedBy: userId });
     }
 
     io.to(fairRoom(params.data.fairId)).emit("item:updated", { fairId: params.data.fairId, itemId: item.id });
@@ -344,25 +344,6 @@ export async function registerFairRoutes(app: FastifyInstance, io: RealtimeServe
     io.to(fairRoom(params.data.fairId)).emit("item:deleted", { fairId: params.data.fairId, itemId: params.data.itemId });
 
     return { ok: true };
-  });
-
-  app.post("/api/fairs/:fairId/realtime-test", async (request, reply) => {
-    const parsed = fairParamsSchema.safeParse(request.params);
-
-    if (!parsed.success) {
-      return reply.code(400).send({
-        error: "Invalid fair id"
-      });
-    }
-
-    io.to(fairRoom(parsed.data.fairId)).emit("item:updated", {
-      fairId: parsed.data.fairId,
-      itemId: "00000000-0000-0000-0000-000000000000"
-    });
-
-    return {
-      ok: true
-    };
   });
 }
 
