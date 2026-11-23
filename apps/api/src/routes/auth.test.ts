@@ -51,6 +51,11 @@ class MemoryAuthRepository implements AuthRepository {
     this.users.set(id, user);
     return user;
   }
+
+  async deleteUser(id: string) {
+    this.users.delete(id);
+    return { ownedFairIds: [], memberFairIds: [] };
+  }
 }
 
 describe("auth routes", () => {

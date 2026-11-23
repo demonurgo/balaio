@@ -45,7 +45,7 @@ export async function createApp(options: CreateAppOptions = {}) {
   const io = createRealtime(app.server);
 
   await registerHealthRoutes(app);
-  await registerAuthRoutes(app, options.authRepository ?? createDbAuthRepository());
+  await registerAuthRoutes(app, options.authRepository ?? createDbAuthRepository(), io);
   await registerFairRoutes(app, io);
   await registerStockRoutes(app, io);
 

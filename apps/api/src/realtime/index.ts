@@ -47,6 +47,10 @@ export function fairRoom(fairId: string) {
   return `fair:${fairId}`;
 }
 
+export function userRoom(userId: string) {
+  return `user:${userId}`;
+}
+
 export function createRealtime(httpServer: HttpServer): RealtimeServer {
   const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
     cors: {
