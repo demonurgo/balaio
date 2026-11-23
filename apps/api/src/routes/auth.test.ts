@@ -208,4 +208,89 @@ describe("auth routes", () => {
     expect(body.user.email).toBe("ana@example.com");
     expect(body.user.birthDate).toBe("1991-06-11");
   });
+
+  it("returns a bearer token that authenticates without the cookie", async () => {
+    const registerResponse = await app.inject({
+      method: "POST",
+      url: "/api/auth/register",
+      payload: {
+        firstName: "Maria",
+        lastName: "Alves",
+        birthDate: "1990-05-10",
+        email: "maria@example.com",
+        password: "senha-segura",
+        confirmPassword: "senha-segura"
+      }
+    });
+    const { token } = registerResponse.json();
+
+    expect(typeof token).toBe("string");
+
+    const meResponse = await app.inject({
+      method: "GET",
+      url: "/api/auth/me",
+      headers: { authorization: `Bearer ${token}` }
+    });
+    const me = meResponse.json();
+
+    expect(meResponse.statusCode).toBe(200);
+    expect(me.user.email).toBe("maria@example.com");
+    expect(typeof me.token).toBe("string");
+
+    const payload = app.jwt.decode<{ exp: number; iat: number }>(me.token);
+    expect(payload && payload.exp - payload.iat).toBe(90 * 24 * 60 * 60);
+  });
+
+  it("returns a bearer token on login and keeps the cookie session working", async () => {
+    await repository.createUser({
+      firstName: "Joao",
+      lastName: "Silva",
+      birthDate: "1988-02-01",
+      email: "joao@example.com",
+      passwordHash: await hashPassword("senha-correta")
+    });
+
+    const loginResponse = await app.inject({
+      method: "POST",
+      url: "/api/auth/login",
+      payload: { email: "joao@example.com", password: "senha-correta" }
+    });
+
+    expect(typeof loginResponse.json().token).toBe("string");
+
+    const cookieResponse = await app.inject({
+      method: "GET",
+      url: "/api/auth/me",
+      headers: { cookie: String(loginResponse.headers["set-cookie"]) }
+    });
+
+    expect(cookieResponse.statusCode).toBe(200);
+    expect(cookieResponse.json().token).toBeUndefined();
+  });
+
+  it("rejects an invalid bearer token even when a valid cookie is sent", async () => {
+    const registerResponse = await app.inject({
+      method: "POST",
+      url: "/api/auth/register",
+      payload: {
+        firstName: "Maria",
+        lastName: "Alves",
+        birthDate: "1990-05-10",
+        email: "maria@example.com",
+        password: "senha-segura",
+        confirmPassword: "senha-segura"
+      }
+    });
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/auth/me",
+      headers: {
+        authorization: "Bearer token-invalido",
+        cookie: String(registerResponse.headers["set-cookie"])
+      }
+    });
+
+    expect(response.statusCode).toBe(401);
+  });
 });

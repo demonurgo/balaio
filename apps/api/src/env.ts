@@ -10,6 +10,8 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(32).default("development-only-secret-change-before-prod"),
   AUTH_COOKIE_NAME: z.string().min(1).default("balaio_session"),
   AUTH_SESSION_DAYS: z.coerce.number().int().positive().default(7),
+  // Lifetime of the bearer token used by the native app (renewed on GET /api/auth/me).
+  AUTH_TOKEN_DAYS: z.coerce.number().int().positive().default(90),
   // Set to true only behind a reverse proxy, so rate limits use the visitor IP.
   TRUST_PROXY: z.stringbool().default(false)
 });

@@ -2,7 +2,13 @@ import type { FastifyInstance } from "fastify";
 import { hashPassword, verifyPassword } from "../auth/password.js";
 import type { AuthRepository, AuthUserRecord } from "../auth/repository.js";
 import { loginSchema, profileUpdateSchema, registerSchema, toFieldErrors } from "../auth/schemas.js";
-import { clearSessionCookie, getSessionUserId, setSessionCookie } from "../auth/session.js";
+import {
+  clearSessionCookie,
+  createBearerToken,
+  getSessionUserId,
+  hasBearerToken,
+  setSessionCookie
+} from "../auth/session.js";
 
 function toPublicUser(user: AuthUserRecord) {
   return {
@@ -74,7 +80,8 @@ export async function registerAuthRoutes(app: FastifyInstance, repository: AuthR
         setSessionCookie(app, reply, user.id);
 
         return reply.code(201).send({
-          user: toPublicUser(user)
+          user: toPublicUser(user),
+          token: createBearerToken(app, user.id)
         });
       } catch (error) {
         if (isUniqueViolation(error)) {
@@ -120,7 +127,8 @@ export async function registerAuthRoutes(app: FastifyInstance, repository: AuthR
       setSessionCookie(app, reply, user.id);
 
       return {
-        user: toPublicUser(user)
+        user: toPublicUser(user),
+        token: createBearerToken(app, user.id)
       };
     }
   );
@@ -152,6 +160,14 @@ export async function registerAuthRoutes(app: FastifyInstance, repository: AuthR
         error: "Unauthenticated",
         message: "Sessao expirada."
       });
+    }
+
+    // Native apps renew their bearer token whenever they check the session.
+    if (hasBearerToken(request)) {
+      return {
+        user: toPublicUser(user),
+        token: createBearerToken(app, user.id)
+      };
     }
 
     return {
