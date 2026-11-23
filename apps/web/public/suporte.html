@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Suporte · Balaio</title>
+    <link rel="icon" type="image/png" href="/assets/pwa/favicon-32x32.png" sizes="32x32" />
+    <style>
+      :root { --bg: #faf9f6; --surface: #f2f1ee; --border: #e5e1d8; --text: #14261f; --muted: #6b6f68; --primary: #166534; }
+      @media (prefers-color-scheme: dark) {
+        :root { --bg: #000000; --surface: #0b0d0c; --border: #26352d; --text: #fdfaea; --muted: #a8a69f; --primary: #22a55a; }
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      main { max-width: 720px; margin: 0 auto; padding: max(env(safe-area-inset-top), 32px) 20px 48px; }
+      h1 { font-size: 28px; line-height: 1.2; margin: 0 0 16px; }
+      h2 { font-size: 18px; margin: 32px 0 8px; }
+      .muted { color: var(--muted); font-size: 14px; }
+      .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+      a { color: var(--primary); }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p><a href="/">← Balaio</a></p>
+      <h1>Suporte</h1>
+      <!-- RASCUNHO: confirmar o e-mail de contato antes de publicar. -->
+      <div class="card">
+        <p>Dúvidas, problemas ou sugestões? Escreva para <a href="mailto:[e-mail de contato]">[e-mail de contato]</a>. Respondemos em até alguns dias úteis.</p>
+      </div>
+
+      <h2>Perguntas frequentes</h2>
+      <p><strong>Como compartilho uma feira?</strong><br />Abra a feira, toque em <em>Compartilhar</em> e envie o link do convite. Quem abrir o link e entrar na conta passa a editar a feira com você. O link vale por 7 dias.</p>
+      <p><strong>Como saio de uma feira compartilhada?</strong><br />Abra a feira, toque em <em>Compartilhar</em> e escolha <em>Sair da feira</em>. O dono da feira também pode remover pessoas.</p>
+      <p><strong>Esqueci a minha senha.</strong><br />Ainda não há recuperação automática. Escreva para o e-mail acima a partir do endereço da sua conta.</p>
+      <p><strong>Como excluo a minha conta?</strong><br />Em <em>Perfil → Excluir conta</em>, confirmando com a senha. As feiras que você criou são apagadas para todos; nas feiras dos outros, você só deixa de participar. Veja a <a href="/privacidade">política de privacidade</a>.</p>
+    </main>
+  </body>
+</html>
