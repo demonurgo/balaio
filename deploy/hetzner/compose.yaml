@@ -1,0 +1,58 @@
+name: balaio
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: balaio_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: balaio
+      POSTGRES_DB: balaio
+      POSTGRES_PASSWORD: ${BALAIO_DB_PASSWORD:?}
+    volumes:
+      - /srv/balaio/data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U balaio -d balaio"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    mem_limit: 256m
+    networks: [balaio_internal]
+  api:
+    image: balaio-api:${BALAIO_RELEASE:?}
+    container_name: balaio_api
+    restart: unless-stopped
+    init: true
+    read_only: true
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=32m"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    environment:
+      NODE_ENV: production
+      API_HOST: 0.0.0.0
+      API_PORT: 3333
+      DATABASE_URL: postgres://balaio:${BALAIO_DB_PASSWORD}@balaio_db:5432/balaio
+      CORS_ORIGIN: https://balaio.demonurgo.com
+      JWT_SECRET: ${BALAIO_JWT_SECRET:?}
+      TRUST_PROXY: "true"
+    depends_on:
+      db: { condition: service_healthy }
+    mem_limit: 384m
+    cpus: 1.0
+    networks: [balaio_internal]
+  web:
+    image: balaio-web:${BALAIO_RELEASE:?}
+    container_name: balaio_web
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE]
+    security_opt: ["no-new-privileges:true"]
+    depends_on: [api]
+    mem_limit: 128m
+    networks: [balaio_internal, balaio_edge]
+networks:
+  balaio_internal:
+    name: balaio_internal
+    internal: true
+  balaio_edge:
+    name: balaio_edge
