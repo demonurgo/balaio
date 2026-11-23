@@ -1,7 +1,7 @@
 import { and, count, desc, eq, inArray } from "drizzle-orm";
-import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { getSessionUserId } from "../auth/session.js";
+import { requireUser } from "../auth/requireUser.js";
 import { db } from "../db/client.js";
 import { fairItems, fairMembers, fairs, stockItems } from "../db/schema.js";
 import { fairRoom, type RealtimeServer } from "../realtime/index.js";
@@ -365,16 +365,6 @@ export async function registerFairRoutes(app: FastifyInstance, io: RealtimeServe
   });
 }
 
-async function requireUser(app: FastifyInstance, request: FastifyRequest, reply: FastifyReply) {
-  const userId = await getSessionUserId(app, request);
-
-  if (!userId) {
-    reply.code(401).send({ message: "Nao autenticado." });
-    return null;
-  }
-
-  return userId;
-}
 
 async function getMembership(fairId: string, userId: string) {
   const rows = await db

@@ -1,7 +1,7 @@
 import { and, desc, eq } from "drizzle-orm";
-import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { getSessionUserId } from "../auth/session.js";
+import { requireUser } from "../auth/requireUser.js";
 import { db } from "../db/client.js";
 import { fairs, stockItems, users } from "../db/schema.js";
 import type { RealtimeServer } from "../realtime/index.js";
@@ -220,16 +220,6 @@ export async function registerStockRoutes(app: FastifyInstance, io: RealtimeServ
   });
 }
 
-async function requireUser(app: FastifyInstance, request: FastifyRequest, reply: FastifyReply) {
-  const userId = await getSessionUserId(app, request);
-
-  if (!userId) {
-    reply.code(401).send({ message: "Não autenticado." });
-    return null;
-  }
-
-  return userId;
-}
 
 function toStockDto(item: DbStockItem, fairName: string | null, consumedByName: string | null) {
   return {
