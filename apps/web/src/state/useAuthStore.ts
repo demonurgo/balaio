@@ -13,6 +13,7 @@ type AuthState = {
   register: (values: RegisterValues) => Promise<void>;
   updateProfile: (values: ProfileUpdateValues) => Promise<void>;
   logout: () => Promise<void>;
+  deleteAccount: (password: string) => Promise<void>;
 };
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -40,6 +41,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
   async logout() {
     await authApi.logout();
+    set({ user: null, status: "anonymous" });
+  },
+  async deleteAccount(password) {
+    await authApi.deleteAccount(password);
     set({ user: null, status: "anonymous" });
   }
 }));

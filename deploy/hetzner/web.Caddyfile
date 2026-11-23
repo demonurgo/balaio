@@ -9,11 +9,18 @@
 	handle @backend {
 		reverse_proxy balaio_api:3333
 	}
+	# Universal Links do app iOS: links /convite/* abrem o app quando instalado.
+	handle /.well-known/apple-app-site-association {
+		header Content-Type application/json
+		header Cache-Control "public, max-age=3600"
+		respond `{"applinks":{"details":[{"appIDs":["N22KX96K9X.com.demonurgo.balaio"],"components":[{"/":"/convite/*","comment":"Convite para uma feira compartilhada"}]}]}}` 200
+	}
 	handle {
 		root * /srv
-		@nocache path /sw.js /index.html /manifest.webmanifest
+		@nocache path /sw.js /index.html /manifest.webmanifest /privacidade.html /suporte.html
 		header @nocache Cache-Control "no-cache"
-		try_files {path} /index.html
+		# /privacidade e /suporte são páginas estáticas; o resto cai no PWA.
+		try_files {path} {path}.html /index.html
 		file_server
 	}
 }

@@ -7,11 +7,20 @@ const envSchema = z.object({
   API_HOST: z.string().min(1).default("127.0.0.1"),
   DATABASE_URL: z.string().min(1).default("postgres://balaio:balaio@localhost:5432/balaio"),
   CORS_ORIGIN: z.string().min(1).default("http://localhost:5173"),
+  // Public address of the web app, used in invite links (/convite/:code).
+  PUBLIC_APP_URL: z.string().url().optional(),
   JWT_SECRET: z.string().min(32).default("development-only-secret-change-before-prod"),
   AUTH_COOKIE_NAME: z.string().min(1).default("balaio_session"),
   AUTH_SESSION_DAYS: z.coerce.number().int().positive().default(7),
+  // Lifetime of the bearer token used by the native app (renewed on GET /api/auth/me).
+  AUTH_TOKEN_DAYS: z.coerce.number().int().positive().default(90),
   // Set to true only behind a reverse proxy, so rate limits use the visitor IP.
   TRUST_PROXY: z.stringbool().default(false)
 });
 
-export const env = envSchema.parse(process.env);
+const parsedEnv = envSchema.parse(process.env);
+
+export const env = {
+  ...parsedEnv,
+  PUBLIC_APP_URL: (parsedEnv.PUBLIC_APP_URL ?? parsedEnv.CORS_ORIGIN).replace(/\/$/, "")
+};

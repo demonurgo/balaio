@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Política de privacidade · Balaio</title>
+    <link rel="icon" type="image/png" href="/assets/pwa/favicon-32x32.png" sizes="32x32" />
+    <style>
+      :root { --bg: #faf9f6; --surface: #f2f1ee; --border: #e5e1d8; --text: #14261f; --muted: #6b6f68; --primary: #166534; }
+      @media (prefers-color-scheme: dark) {
+        :root { --bg: #000000; --surface: #0b0d0c; --border: #26352d; --text: #fdfaea; --muted: #a8a69f; --primary: #22a55a; }
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      main { max-width: 720px; margin: 0 auto; padding: max(env(safe-area-inset-top), 32px) 20px 48px; }
+      h1 { font-size: 28px; line-height: 1.2; margin: 0 0 4px; }
+      h2 { font-size: 18px; margin: 32px 0 8px; }
+      p, li { color: var(--text); }
+      .muted { color: var(--muted); font-size: 14px; }
+      .draft { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; font-size: 14px; }
+      a { color: var(--primary); }
+      ul { padding-left: 20px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p><a href="/">← Balaio</a></p>
+      <h1>Política de privacidade</h1>
+      <p class="muted">Última atualização: 23 de novembro de 2026</p>
+      <!-- RASCUNHO: revisar o texto, o e-mail de contato e o local do servidor antes de publicar. -->
+      <p class="draft">Rascunho para revisão. Os trechos entre colchetes ainda precisam ser confirmados.</p>
+
+      <p>O Balaio é uma lista de feira mensal que pode ser compartilhada com outras pessoas em tempo real, disponível no site <a href="https://balaio.demonurgo.com">balaio.demonurgo.com</a> e no app para iPhone. Esta política explica quais dados o Balaio guarda, para quê e como você pode apagá-los, de acordo com a Lei Geral de Proteção de Dados (LGPD, Lei 13.709/2018).</p>
+
+      <h2>Quem cuida dos seus dados</h2>
+      <p>O Balaio é mantido por um desenvolvedor independente, [nome do responsável], que é o controlador dos dados. Contato: <a href="mailto:[e-mail de contato]">[e-mail de contato]</a>.</p>
+
+      <h2>Dados que coletamos</h2>
+      <ul>
+        <li><strong>Conta:</strong> nome, sobrenome, data de nascimento, e-mail e senha. A senha é guardada só como hash (Argon2); ninguém consegue lê-la.</li>
+        <li><strong>Foto de perfil</strong>, se você escolher uma.</li>
+        <li><strong>Conteúdo que você cria:</strong> feiras, orçamentos, itens, quantidades, preços, categorias, anotações, fotos de itens e o seu estoque.</li>
+        <li><strong>Participação em feiras compartilhadas:</strong> de quais feiras você participa e quem alterou cada item.</li>
+        <li><strong>Dados técnicos</strong> necessários para o serviço funcionar, como endereço IP nos registros do servidor, usados para segurança e para limitar tentativas de login.</li>
+      </ul>
+
+      <h2>Para que usamos</h2>
+      <p>Só para fazer o Balaio funcionar: entrar na sua conta, guardar e sincronizar as suas listas, mostrar as mudanças em tempo real para quem participa da mesma feira e proteger o serviço contra abuso. A base legal é a execução do serviço que você pediu ao criar a conta.</p>
+      <p>O Balaio não tem anúncios, não vende dados, não faz rastreamento entre apps ou sites e não usa ferramentas de análise de terceiros.</p>
+
+      <h2>Com quem os dados são compartilhados</h2>
+      <ul>
+        <li><strong>Pessoas da mesma feira:</strong> quando você entra numa feira compartilhada por convite, as outras pessoas dela veem o seu nome, a sua foto de perfil e o conteúdo da feira. O seu e-mail e a sua data de nascimento não aparecem para elas.</li>
+        <li><strong>Hospedagem:</strong> os dados ficam num servidor contratado da Hetzner Online GmbH [confirmar localização do servidor], que só os armazena e processa em nosso nome.</li>
+        <li><strong>Autoridades:</strong> apenas quando a lei exigir.</li>
+      </ul>
+
+      <h2>Cookies e armazenamento no aparelho</h2>
+      <p>O site usa um único cookie de sessão, necessário para manter você conectado. O app para iPhone guarda o token de acesso no Keychain do aparelho. Não usamos cookies de publicidade nem de análise.</p>
+
+      <h2>Por quanto tempo guardamos</h2>
+      <p>Enquanto a sua conta existir. Se você excluir a conta, os dados são apagados na hora do banco de dados ativo. Cópias de segurança, se houver, são sobrescritas em até [prazo] dias.</p>
+
+      <h2>Como excluir a sua conta</h2>
+      <p>No app ou no site, abra <strong>Perfil → Excluir conta</strong> e confirme com a sua senha. Isso apaga:</p>
+      <ul>
+        <li>a sua conta, foto e estoque;</li>
+        <li>as feiras que você criou, para todas as pessoas que participavam delas;</li>
+        <li>a sua participação nas feiras de outras pessoas (os itens que você adicionou nelas continuam, sem o seu nome).</li>
+      </ul>
+      <p>Se não conseguir entrar na conta, peça a exclusão pelo e-mail de contato.</p>
+
+      <h2>Seus direitos</h2>
+      <p>Pela LGPD, você pode pedir confirmação de que tratamos seus dados, acesso, correção, portabilidade, exclusão e informações sobre o compartilhamento. Boa parte disso você faz no próprio app (editar perfil e excluir conta); para o resto, escreva para o e-mail de contato. Você também pode reclamar à Autoridade Nacional de Proteção de Dados (ANPD).</p>
+
+      <h2>Crianças</h2>
+      <p>O Balaio não é direcionado a crianças. [Definir idade mínima para criar conta, se houver.]</p>
+
+      <h2>Segurança</h2>
+      <p>A comunicação é sempre criptografada (HTTPS), as senhas são guardadas com hash e o acesso ao servidor é restrito. Nenhum sistema é perfeitamente seguro; se acontecer um incidente que afete você, avisaremos conforme a LGPD.</p>
+
+      <h2>Mudanças nesta política</h2>
+      <p>Se esta política mudar, a data no topo será atualizada e, em mudanças importantes, avisaremos no app.</p>
+
+      <p class="muted"><a href="/suporte">Suporte</a></p>
+    </main>
+  </body>
+</html>

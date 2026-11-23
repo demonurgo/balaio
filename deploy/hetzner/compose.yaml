@@ -32,6 +32,7 @@ services:
       API_PORT: 3333
       DATABASE_URL: postgres://balaio:${BALAIO_DB_PASSWORD}@balaio_db:5432/balaio
       CORS_ORIGIN: https://balaio.demonurgo.com
+      PUBLIC_APP_URL: https://balaio.demonurgo.com
       JWT_SECRET: ${BALAIO_JWT_SECRET:?}
       TRUST_PROXY: "true"
     depends_on:

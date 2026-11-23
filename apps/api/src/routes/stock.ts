@@ -1,10 +1,11 @@
 import { and, desc, eq } from "drizzle-orm";
-import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { getSessionUserId } from "../auth/session.js";
+import { requireUser } from "../auth/requireUser.js";
 import { db } from "../db/client.js";
 import { fairs, stockItems, users } from "../db/schema.js";
-import type { RealtimeServer } from "../realtime/index.js";
+import { imageLink, resolveImageInput } from "../images.js";
+import { type RealtimeServer, userRoom } from "../realtime/index.js";
 
 const stockItemParamsSchema = z.object({
   stockItemId: z.string().uuid()
@@ -84,7 +85,8 @@ export async function registerStockRoutes(app: FastifyInstance, io: RealtimeServ
     if (parsed.data.unitPrice !== undefined) patch.unitPrice = toDbNumber(parsed.data.unitPrice);
     if (parsed.data.category !== undefined) patch.category = parsed.data.category;
     if (parsed.data.notes !== undefined) patch.notes = parsed.data.notes;
-    if (parsed.data.imageUrl !== undefined) patch.imageUrl = parsed.data.imageUrl;
+    const imageUrl = resolveImageInput(parsed.data.imageUrl);
+    if (imageUrl !== undefined) patch.imageUrl = imageUrl;
 
     const [item] = await db
       .update(stockItems)
@@ -96,7 +98,7 @@ export async function registerStockRoutes(app: FastifyInstance, io: RealtimeServ
       return reply.code(404).send({ message: "Item de estoque não encontrado." });
     }
 
-    io.emit("stock:updated", { changedBy: userId });
+    io.to(userRoom(userId)).emit("stock:updated", { changedBy: userId });
     return { data: toStockDto(item, null, null) };
   });
 
@@ -169,7 +171,7 @@ export async function registerStockRoutes(app: FastifyInstance, io: RealtimeServ
       item = updated;
     }
 
-    io.emit("stock:updated", { changedBy: userId });
+    io.to(userRoom(userId)).emit("stock:updated", { changedBy: userId });
     return { data: toStockDto(item ?? current[0], null, null) };
   });
 
@@ -188,7 +190,7 @@ export async function registerStockRoutes(app: FastifyInstance, io: RealtimeServ
 
     await db.delete(stockItems).where(and(eq(stockItems.id, params.data.stockItemId), eq(stockItems.userId, userId)));
 
-    io.emit("stock:updated", { changedBy: userId });
+    io.to(userRoom(userId)).emit("stock:updated", { changedBy: userId });
     return { ok: true };
   });
 
@@ -215,21 +217,11 @@ export async function registerStockRoutes(app: FastifyInstance, io: RealtimeServ
       return reply.code(404).send({ message: "Item de estoque não encontrado." });
     }
 
-    io.emit("stock:updated", { changedBy: userId });
+    io.to(userRoom(userId)).emit("stock:updated", { changedBy: userId });
     return { data: toStockDto(item, null, null) };
   });
 }
 
-async function requireUser(app: FastifyInstance, request: FastifyRequest, reply: FastifyReply) {
-  const userId = await getSessionUserId(app, request);
-
-  if (!userId) {
-    reply.code(401).send({ message: "Não autenticado." });
-    return null;
-  }
-
-  return userId;
-}
 
 function toStockDto(item: DbStockItem, fairName: string | null, consumedByName: string | null) {
   return {
@@ -241,7 +233,7 @@ function toStockDto(item: DbStockItem, fairName: string | null, consumedByName: 
     totalPrice: toNumber(item.totalPrice),
     category: item.category,
     notes: item.notes,
-    imageUrl: item.imageUrl,
+    imageUrl: imageLink("stock", item.id, item.imageUrl, item.updatedAt),
     status: item.status,
     sourceFairId: item.sourceFairId,
     sourceFairItemId: item.sourceFairItemId,

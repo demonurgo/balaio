@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import { db } from "../db/client.js";
-import { users } from "../db/schema.js";
+import { fairMembers, fairs, users } from "../db/schema.js";
 
 export type AuthUserRecord = {
   id: string;
@@ -11,6 +11,7 @@ export type AuthUserRecord = {
   email: string;
   imageUrl: string | null;
   passwordHash: string;
+  updatedAt?: Date;
 };
 
 export type CreateUserInput = {
@@ -29,11 +30,19 @@ export type UpdateUserInput = {
   imageUrl?: string | null | undefined;
 };
 
+export type DeletedUserResult = {
+  /** Fairs owned by the user: deleted for every member (cascade). */
+  ownedFairIds: string[];
+  /** Fairs shared with the user: they only lose this member. */
+  memberFairIds: string[];
+};
+
 export type AuthRepository = {
   findUserByEmail: (email: string) => Promise<AuthUserRecord | null>;
   findUserById: (id: string) => Promise<AuthUserRecord | null>;
   createUser: (input: CreateUserInput) => Promise<AuthUserRecord>;
   updateUser: (id: string, input: UpdateUserInput) => Promise<AuthUserRecord | null>;
+  deleteUser: (id: string) => Promise<DeletedUserResult>;
 };
 
 const userColumns = {
@@ -44,7 +53,8 @@ const userColumns = {
   birthDate: users.birthDate,
   email: users.email,
   imageUrl: users.imageUrl,
-  passwordHash: users.passwordHash
+  passwordHash: users.passwordHash,
+  updatedAt: users.updatedAt
 };
 
 export function createDbAuthRepository(): AuthRepository {
@@ -94,6 +104,25 @@ export function createDbAuthRepository(): AuthRepository {
         .returning(userColumns);
 
       return rows[0] ?? null;
+    },
+    async deleteUser(id) {
+      return db.transaction(async (tx) => {
+        const owned = await tx.select({ id: fairs.id }).from(fairs).where(eq(fairs.ownerId, id));
+        const shared = await tx
+          .select({ id: fairMembers.fairId })
+          .from(fairMembers)
+          .innerJoin(fairs, eq(fairMembers.fairId, fairs.id))
+          .where(and(eq(fairMembers.userId, id), ne(fairs.ownerId, id)));
+
+        // Foreign keys cascade: owned fairs (with items, members and invites),
+        // memberships, stock and templates go away with the user.
+        await tx.delete(users).where(eq(users.id, id));
+
+        return {
+          ownedFairIds: owned.map((fair) => fair.id),
+          memberFairIds: shared.map((fair) => fair.id)
+        };
+      });
     }
   };
 }

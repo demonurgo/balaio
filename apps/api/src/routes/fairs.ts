@@ -1,10 +1,12 @@
 import { and, count, desc, eq, inArray } from "drizzle-orm";
-import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { getSessionUserId } from "../auth/session.js";
+import { requireUser } from "../auth/requireUser.js";
 import { db } from "../db/client.js";
+import { getMembership } from "../fairs/membership.js";
+import { imageLink, resolveImageInput } from "../images.js";
 import { fairItems, fairMembers, fairs, stockItems } from "../db/schema.js";
-import { fairRoom, type RealtimeServer } from "../realtime/index.js";
+import { fairRoom, type RealtimeServer, userRoom } from "../realtime/index.js";
 
 const monthNames = [
   "Janeiro",
@@ -192,6 +194,43 @@ export async function registerFairRoutes(app: FastifyInstance, io: RealtimeServe
     return { ok: true };
   });
 
+  app.get("/api/fairs/:fairId", async (request, reply) => {
+    const userId = await requireUser(app, request, reply);
+
+    if (!userId) {
+      return;
+    }
+
+    const params = fairParamsSchema.safeParse(request.params);
+
+    if (!params.success) {
+      return reply.code(400).send({ message: "Feira inválida." });
+    }
+
+    if (!(await getMembership(params.data.fairId, userId))) {
+      return reply.code(404).send({ message: "Feira não encontrada." });
+    }
+
+    const [fair] = await db.select().from(fairs).where(eq(fairs.id, params.data.fairId)).limit(1);
+
+    if (!fair) {
+      return reply.code(404).send({ message: "Feira não encontrada." });
+    }
+
+    const items = await db
+      .select()
+      .from(fairItems)
+      .where(eq(fairItems.fairId, fair.id))
+      .orderBy(fairItems.position, fairItems.createdAt);
+
+    return {
+      data: {
+        fair: await hydrateFairSummary(fair),
+        items: items.map(toItemDto)
+      }
+    };
+  });
+
   app.post("/api/fairs/:fairId/items", async (request, reply) => {
     const userId = await requireUser(app, request, reply);
 
@@ -230,7 +269,7 @@ export async function registerFairRoutes(app: FastifyInstance, io: RealtimeServe
         purchased: parsed.data.purchased,
         category: parsed.data.category ?? null,
         notes: parsed.data.notes ?? null,
-        imageUrl: parsed.data.imageUrl ?? null,
+        imageUrl: resolveImageInput(parsed.data.imageUrl) ?? null,
         position: Number(positionCount),
         updatedBy: userId
       })
@@ -242,7 +281,7 @@ export async function registerFairRoutes(app: FastifyInstance, io: RealtimeServe
 
     if (item.purchased) {
       await upsertStockItem(userId, item);
-      io.emit("stock:updated", { changedBy: userId });
+      io.to(userRoom(userId)).emit("stock:updated", { changedBy: userId });
     }
 
     io.to(fairRoom(params.data.fairId)).emit("item:created", { fairId: params.data.fairId, itemId: item.id });
@@ -298,7 +337,8 @@ export async function registerFairRoutes(app: FastifyInstance, io: RealtimeServe
     if (parsed.data.purchased !== undefined) patch.purchased = parsed.data.purchased;
     if (parsed.data.category !== undefined) patch.category = parsed.data.category;
     if (parsed.data.notes !== undefined) patch.notes = parsed.data.notes;
-    if (parsed.data.imageUrl !== undefined) patch.imageUrl = parsed.data.imageUrl;
+    const imageUrl = resolveImageInput(parsed.data.imageUrl);
+    if (imageUrl !== undefined) patch.imageUrl = imageUrl;
 
     const [item] = await db
       .update(fairItems)
@@ -312,7 +352,7 @@ export async function registerFairRoutes(app: FastifyInstance, io: RealtimeServe
 
     if (item.purchased) {
       await upsertStockItem(userId, item);
-      io.emit("stock:updated", { changedBy: userId });
+      io.to(userRoom(userId)).emit("stock:updated", { changedBy: userId });
     }
 
     io.to(fairRoom(params.data.fairId)).emit("item:updated", { fairId: params.data.fairId, itemId: item.id });
@@ -344,47 +384,9 @@ export async function registerFairRoutes(app: FastifyInstance, io: RealtimeServe
 
     return { ok: true };
   });
-
-  app.post("/api/fairs/:fairId/realtime-test", async (request, reply) => {
-    const parsed = fairParamsSchema.safeParse(request.params);
-
-    if (!parsed.success) {
-      return reply.code(400).send({
-        error: "Invalid fair id"
-      });
-    }
-
-    io.to(fairRoom(parsed.data.fairId)).emit("item:updated", {
-      fairId: parsed.data.fairId,
-      itemId: "00000000-0000-0000-0000-000000000000"
-    });
-
-    return {
-      ok: true
-    };
-  });
 }
 
-async function requireUser(app: FastifyInstance, request: FastifyRequest, reply: FastifyReply) {
-  const userId = await getSessionUserId(app, request);
 
-  if (!userId) {
-    reply.code(401).send({ message: "Nao autenticado." });
-    return null;
-  }
-
-  return userId;
-}
-
-async function getMembership(fairId: string, userId: string) {
-  const rows = await db
-    .select({ role: fairMembers.role })
-    .from(fairMembers)
-    .where(and(eq(fairMembers.fairId, fairId), eq(fairMembers.userId, userId)))
-    .limit(1);
-
-  return rows[0] ?? null;
-}
 
 async function listFairsForUser(userId: string) {
   let userFairs = await selectUserFairs(userId);
@@ -513,7 +515,7 @@ function toItemDto(item: DbItem) {
     purchased: item.purchased,
     category: item.category,
     notes: item.notes,
-    imageUrl: item.imageUrl
+    imageUrl: imageLink("items", item.id, item.imageUrl, item.updatedAt)
   };
 }
 

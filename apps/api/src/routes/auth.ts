@@ -1,8 +1,16 @@
 import type { FastifyInstance } from "fastify";
 import { hashPassword, verifyPassword } from "../auth/password.js";
 import type { AuthRepository, AuthUserRecord } from "../auth/repository.js";
-import { loginSchema, profileUpdateSchema, registerSchema, toFieldErrors } from "../auth/schemas.js";
-import { clearSessionCookie, getSessionUserId, setSessionCookie } from "../auth/session.js";
+import { deleteAccountSchema, loginSchema, profileUpdateSchema, registerSchema, toFieldErrors } from "../auth/schemas.js";
+import {
+  clearSessionCookie,
+  createBearerToken,
+  getSessionUserId,
+  hasBearerToken,
+  setSessionCookie
+} from "../auth/session.js";
+import { imageLink, resolveImageInput } from "../images.js";
+import { fairRoom, type RealtimeServer, userRoom } from "../realtime/index.js";
 
 function toPublicUser(user: AuthUserRecord) {
   return {
@@ -12,7 +20,7 @@ function toPublicUser(user: AuthUserRecord) {
     lastName: user.lastName,
     birthDate: user.birthDate,
     email: user.email,
-    imageUrl: user.imageUrl
+    imageUrl: imageLink("users", user.id, user.imageUrl, user.updatedAt)
   };
 }
 
@@ -33,7 +41,7 @@ function isUniqueViolation(error: unknown) {
   );
 }
 
-export async function registerAuthRoutes(app: FastifyInstance, repository: AuthRepository) {
+export async function registerAuthRoutes(app: FastifyInstance, repository: AuthRepository, io: RealtimeServer) {
   app.post(
     "/api/auth/register",
     {
@@ -74,7 +82,8 @@ export async function registerAuthRoutes(app: FastifyInstance, repository: AuthR
         setSessionCookie(app, reply, user.id);
 
         return reply.code(201).send({
-          user: toPublicUser(user)
+          user: toPublicUser(user),
+          token: createBearerToken(app, user.id)
         });
       } catch (error) {
         if (isUniqueViolation(error)) {
@@ -120,7 +129,8 @@ export async function registerAuthRoutes(app: FastifyInstance, repository: AuthR
       setSessionCookie(app, reply, user.id);
 
       return {
-        user: toPublicUser(user)
+        user: toPublicUser(user),
+        token: createBearerToken(app, user.id)
       };
     }
   );
@@ -152,6 +162,14 @@ export async function registerAuthRoutes(app: FastifyInstance, repository: AuthR
         error: "Unauthenticated",
         message: "Sessao expirada."
       });
+    }
+
+    // Native apps renew their bearer token whenever they check the session.
+    if (hasBearerToken(request)) {
+      return {
+        user: toPublicUser(user),
+        token: createBearerToken(app, user.id)
+      };
     }
 
     return {
@@ -186,7 +204,10 @@ export async function registerAuthRoutes(app: FastifyInstance, repository: AuthR
     }
 
     try {
-      const user = await repository.updateUser(userId, parsed.data);
+      const user = await repository.updateUser(userId, {
+        ...parsed.data,
+        imageUrl: resolveImageInput(parsed.data.imageUrl)
+      });
 
       if (!user) {
         clearSessionCookie(reply);
@@ -212,4 +233,56 @@ export async function registerAuthRoutes(app: FastifyInstance, repository: AuthR
       throw error;
     }
   });
+
+  app.delete(
+    "/api/auth/me",
+    {
+      config: {
+        rateLimit: {
+          max: 5,
+          timeWindow: "1 minute"
+        }
+      }
+    },
+    async (request, reply) => {
+      const userId = await getSessionUserId(app, request);
+      const user = userId ? await repository.findUserById(userId) : null;
+
+      if (!user) {
+        clearSessionCookie(reply);
+
+        return reply.code(401).send({
+          error: "Unauthenticated",
+          message: "Sessao expirada."
+        });
+      }
+
+      const parsed = deleteAccountSchema.safeParse(request.body ?? {});
+
+      if (!parsed.success) {
+        return reply.code(400).send(validationError(toFieldErrors(parsed.error)));
+      }
+
+      if (!(await verifyPassword(user.passwordHash, parsed.data.password))) {
+        return reply.code(400).send(validationError({ password: "Senha incorreta." }));
+      }
+
+      const result = await repository.deleteUser(user.id);
+
+      for (const fairId of result.ownedFairIds) {
+        io.to(fairRoom(fairId)).emit("fair:deleted", { fairId });
+      }
+
+      for (const fairId of result.memberFairIds) {
+        io.to(fairRoom(fairId)).emit("fair:updated", { fairId });
+      }
+
+      io.in(userRoom(user.id)).disconnectSockets(true);
+      clearSessionCookie(reply);
+
+      return {
+        ok: true
+      };
+    }
+  );
 }

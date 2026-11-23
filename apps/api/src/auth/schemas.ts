@@ -58,6 +58,10 @@ export const loginSchema = z.object({
   password: z.string().min(1, "Senha obrigatoria.")
 });
 
+export const deleteAccountSchema = z.object({
+  password: z.string().min(1, "Digite sua senha para confirmar.")
+});
+
 export const profileUpdateSchema = z.object({
   firstName: nameSchema,
   lastName: nameSchema,

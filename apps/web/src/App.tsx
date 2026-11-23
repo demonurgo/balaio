@@ -38,6 +38,10 @@ import {
 import type { ChangeEvent, CSSProperties, KeyboardEvent, MouseEvent, PointerEvent, ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AuthScreen } from "./auth/AuthScreen";
+import { DeleteAccountSection } from "./auth/DeleteAccountSection";
+import { FairMembersPage } from "./fair/FairMembersPage";
+import { InviteNotice, InvitePage } from "./invite/InvitePage";
+import { getInviteCodeFromPath, leaveInvitePath } from "./invite/invitePath";
 import { triggerHaptic, triggerHapticDuration } from "./lib/haptics";
 import { optimizeImageFile } from "./lib/images";
 import { socket } from "./lib/realtime";
@@ -60,7 +64,7 @@ const emptyFair = {
   memberCount: 0
 };
 
-type View = "feiras" | "minhas-feiras" | "feira" | "produto" | "calendario" | "orcamento" | "estoque" | "estoque-produto" | "perfil";
+type View = "feiras" | "minhas-feiras" | "feira" | "membros" | "produto" | "calendario" | "orcamento" | "estoque" | "estoque-produto" | "perfil";
 type RealtimeStatus = "online" | "unstable" | "offline";
 type RouteState = {
   view: View;
@@ -77,6 +81,10 @@ function getRouteFromHash(): RouteState {
 
   if (view === "feira" && fairId) {
     return { view: "feira", fairId };
+  }
+
+  if (view === "membros" && fairId) {
+    return { view: "membros", fairId };
   }
 
   if (view === "produto" && fairId && itemId) {
@@ -101,6 +109,7 @@ function App() {
   const logout = useAuthStore((state) => state.logout);
   const updateProfile = useAuthStore((state) => state.updateProfile);
   const [route, setRoute] = useState<RouteState>(getRouteFromHash);
+  const [inviteCode, setInviteCode] = useState(() => getInviteCodeFromPath());
   const view = route.view;
   const fairs = useFairStore((state) => state.fairs);
   const fairStatus = useFairStore((state) => state.status);
@@ -160,18 +169,28 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if ((route.view === "feira" || route.view === "produto") && route.fairId) {
+    if ((route.view === "feira" || route.view === "membros" || route.view === "produto") && route.fairId) {
       selectFair(route.fairId);
     }
   }, [route.fairId, route.view, selectFair]);
+
+  useEffect(() => {
+    // The socket is authenticated by the session cookie at connection time:
+    // drop it on logout so the next account opens a fresh connection.
+    if (authStatus !== "authenticated") {
+      socket.disconnect();
+    }
+  }, [authStatus]);
 
   useEffect(() => {
     if (authStatus !== "authenticated" || !selectedFairId) {
       return;
     }
 
+    const joinFair = () => socket.emit("fair:join", { fairId: selectedFairId });
+
     socket.connect();
-    socket.emit("fair:join", { fairId: selectedFairId });
+    joinFair();
 
     const refresh = () => {
       void loadFairs();
@@ -181,6 +200,8 @@ function App() {
     const markUnstable = () => setRealtimeStatus("unstable");
     const markOffline = () => setRealtimeStatus("offline");
     socket.on("connect", markOnline);
+    // Rooms are lost when the connection drops: join again after reconnecting.
+    socket.io.on("reconnect", joinFair);
     socket.on("connect_error", markUnstable);
     socket.on("disconnect", markOffline);
     socket.on("fair:updated", refresh);
@@ -193,6 +214,7 @@ function App() {
     return () => {
       socket.emit("fair:leave", { fairId: selectedFairId });
       socket.off("connect", markOnline);
+      socket.io.off("reconnect", joinFair);
       socket.off("connect_error", markUnstable);
       socket.off("disconnect", markOffline);
       socket.off("fair:updated", refresh);
@@ -298,7 +320,21 @@ function App() {
   }
 
   if (authStatus === "anonymous") {
-    return <AuthScreen />;
+    return <AuthScreen notice={inviteCode ? <InviteNotice code={inviteCode} /> : undefined} />;
+  }
+
+  if (inviteCode) {
+    return (
+      <InvitePage
+        code={inviteCode}
+        onJoined={async (fairId) => {
+          await loadFairs();
+          selectFair(fairId);
+          setInviteCode(null);
+          leaveInvitePath(`feira/${fairId}`);
+        }}
+      />
+    );
   }
 
   return (
@@ -309,7 +345,7 @@ function App() {
         </button>
 
         <nav className="nav-list" aria-label="Principal">
-          <a className={view === "feiras" || view === "minhas-feiras" || view === "feira" || view === "produto" ? "nav-item active" : "nav-item"} href="#feiras" onClick={() => triggerHaptic("selection")}>
+          <a className={view === "feiras" || view === "minhas-feiras" || view === "feira" || view === "membros" || view === "produto" ? "nav-item active" : "nav-item"} href="#feiras" onClick={() => triggerHaptic("selection")}>
             <ShoppingBasket size={19} />
             Feiras
           </a>
@@ -401,6 +437,20 @@ function App() {
             restoreItem={restoreStockItem}
             status={stockStatus}
           />
+        ) : view === "membros" && selectedFair.id !== "empty" ? (
+          <FairMembersPage
+            fair={selectedFair}
+            key={selectedFair.id}
+            onBack={() => {
+              triggerHaptic("light");
+              window.location.hash = `feira/${selectedFair.id}`;
+            }}
+            onLeft={() => {
+              void loadFairs();
+              window.location.hash = "feiras";
+            }}
+            onMembersChanged={() => void loadFairs()}
+          />
         ) : view === "produto" && routeItem ? (
           <ProductPage
             deleteItem={deleteItem}
@@ -424,6 +474,10 @@ function App() {
             onBack={() => {
               triggerHaptic("light");
               window.location.hash = "feiras";
+            }}
+            onOpenMembers={() => {
+              triggerHaptic("selection");
+              window.location.hash = `membros/${selectedFair.id}`;
             }}
             onOpenProduct={(itemId) => {
               triggerHaptic("selection");
@@ -593,7 +647,14 @@ function App() {
                 <p>{selectedFair.memberCount} pessoas</p>
               </div>
               <div className="header-actions">
-                <button className="ghost-button" type="button" onClick={() => triggerHaptic("light")}>
+                <button
+                  className="ghost-button"
+                  type="button"
+                  onClick={() => {
+                    triggerHaptic("light");
+                    window.location.hash = `membros/${selectedFair.id}`;
+                  }}
+                >
                   <Share2 size={17} />
                   Compartilhar
                 </button>
@@ -695,7 +756,7 @@ function App() {
           <span>Dashboard</span>
         </a>
         <a
-          className={view === "minhas-feiras" || view === "feira" || view === "produto" ? "bottom-tab active" : "bottom-tab"}
+          className={view === "minhas-feiras" || view === "feira" || view === "membros" || view === "produto" ? "bottom-tab active" : "bottom-tab"}
           href={fairs[0] ? `#feira/${fairs[0].id}` : "#feiras"}
           onClick={(event) => {
             event.preventDefault();
@@ -788,6 +849,7 @@ type FairPageProps = {
   items: FairItem[];
   createItem: CreateFairItem;
   onBack: () => void;
+  onOpenMembers: () => void;
   onOpenProduct: (itemId: string) => void;
   realtimeStatus: RealtimeStatus;
   togglePurchased: (itemId: string) => Promise<void>;
@@ -1230,7 +1292,7 @@ function getCategoryBreakdown(items: FairItem[], mode: CategoryChartMode) {
   return { categories, total };
 }
 
-function FairPage({ deleteFair, deleteItem, fair, items, createItem, onBack, onOpenProduct, realtimeStatus, togglePurchased, totals, updateFair, updateItem }: FairPageProps) {
+function FairPage({ deleteFair, deleteItem, fair, items, createItem, onBack, onOpenMembers, onOpenProduct, realtimeStatus, togglePurchased, totals, updateFair, updateItem }: FairPageProps) {
   const purchasedItems = items.filter((item) => item.purchased);
   const purchasedTotal = purchasedItems.reduce((sum, item) => sum + item.totalPrice, 0);
   const pendingTotal = items.filter((item) => !item.purchased).reduce((sum, item) => sum + item.totalPrice, 0);
@@ -1395,6 +1457,9 @@ function FairPage({ deleteFair, deleteItem, fair, items, createItem, onBack, onO
           )}
         </div>
         <div className="fair-header-actions">
+          <button className="icon-button" type="button" aria-label="Compartilhar feira" title="Compartilhar" onClick={onOpenMembers}>
+            <Share2 size={18} />
+          </button>
           <div className="fair-status-wrap">
             <button
               className={`fair-realtime-button ${realtimeStatus}`}
@@ -3379,6 +3444,32 @@ function ProfilePage({ user, fairsCount, itemsCount, logout, theme, toggleTheme,
         </div>
       </section>
 
+      <section className="profile-section" aria-label="Sobre">
+        <h2>Sobre</h2>
+        <div className="profile-list">
+          <a className="profile-row profile-row-button" href="/privacidade" target="_blank" rel="noreferrer">
+            <span className="profile-row-icon">
+              <ShieldCheck size={18} />
+            </span>
+            <span>
+              <small>Seus dados</small>
+              <strong>Política de privacidade</strong>
+            </span>
+            <ChevronRight size={18} />
+          </a>
+          <a className="profile-row profile-row-button" href="/suporte" target="_blank" rel="noreferrer">
+            <span className="profile-row-icon">
+              <UserRound size={18} />
+            </span>
+            <span>
+              <small>Ajuda</small>
+              <strong>Suporte</strong>
+            </span>
+            <ChevronRight size={18} />
+          </a>
+        </div>
+      </section>
+
       <button
         className="profile-logout"
         type="button"
@@ -3390,6 +3481,8 @@ function ProfilePage({ user, fairsCount, itemsCount, logout, theme, toggleTheme,
         <LogOut size={18} />
         Sair da conta
       </button>
+
+      <DeleteAccountSection />
     </section>
   );
 }

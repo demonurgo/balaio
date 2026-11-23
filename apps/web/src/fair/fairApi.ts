@@ -82,3 +82,59 @@ export function updateItem(fairId: string, itemId: string, values: ItemPatch) {
 export function deleteItem(fairId: string, itemId: string) {
   return apiDelete<{ ok: true }>(`/api/fairs/${fairId}/items/${itemId}`);
 }
+
+export type FairInviteDto = {
+  code: string;
+  url: string;
+  role: "owner" | "editor" | "viewer";
+  expiresAt: string;
+};
+
+export type FairMemberDto = {
+  userId: string;
+  name: string;
+  firstName: string;
+  lastName: string;
+  imageUrl?: string | null;
+  role: "owner" | "editor" | "viewer";
+  isOwner: boolean;
+  isMe: boolean;
+  joinedAt: string;
+};
+
+export type InvitePreviewDto = {
+  code: string;
+  expiresAt: string;
+  fair: {
+    id: string;
+    name: string;
+    month: number;
+    year: number;
+    memberCount: number;
+  };
+  owner: {
+    name: string;
+    firstName: string;
+  };
+  alreadyMember: boolean;
+};
+
+export function createInvite(fairId: string) {
+  return apiPost<{ data: FairInviteDto }>(`/api/fairs/${fairId}/invites`);
+}
+
+export function getMembers(fairId: string) {
+  return apiGet<{ data: FairMemberDto[] }>(`/api/fairs/${fairId}/members`);
+}
+
+export function removeMember(fairId: string, userId: string) {
+  return apiDelete<{ ok: true }>(`/api/fairs/${fairId}/members/${userId}`);
+}
+
+export function getInvite(code: string) {
+  return apiGet<{ data: InvitePreviewDto }>(`/api/invites/${encodeURIComponent(code)}`);
+}
+
+export function acceptInvite(code: string) {
+  return apiPost<{ data: { fairId: string; alreadyMember: boolean } }>(`/api/invites/${encodeURIComponent(code)}/accept`);
+}

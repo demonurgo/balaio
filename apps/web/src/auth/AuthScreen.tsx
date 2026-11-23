@@ -1,5 +1,5 @@
 import { Eye, EyeOff, LoaderCircle } from "lucide-react";
-import type { FormEvent } from "react";
+import type { FormEvent, ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { ApiError } from "../lib/api";
 import { useAuthStore } from "../state/useAuthStore";
@@ -29,7 +29,12 @@ const initialRegister: RegisterValues = {
 
 type Mode = "login" | "register";
 
-export function AuthScreen() {
+type AuthScreenProps = {
+  /** Shown under the logo, e.g. who invited the person to a fair. */
+  notice?: ReactNode;
+};
+
+export function AuthScreen({ notice }: AuthScreenProps = {}) {
   const theme = useThemeStore((state) => state.theme);
   const logoSrc =
     theme === "dark"
@@ -108,6 +113,7 @@ export function AuthScreen() {
     <main className="auth-shell">
       <section className="auth-panel" aria-label="Autenticacao">
         <img className="auth-logo" src={logoSrc} alt="Balaio" />
+        {notice}
 
         <div className="auth-tabs" role="tablist" aria-label="Entrar ou criar conta">
           <button
