@@ -66,6 +66,26 @@ export const fairMembers = pgTable(
   })
 );
 
+export const fairInvites = pgTable(
+  "fair_invites",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    code: varchar("code", { length: 32 }).notNull(),
+    fairId: uuid("fair_id")
+      .references(() => fairs.id, { onDelete: "cascade" })
+      .notNull(),
+    createdBy: uuid("created_by")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    role: memberRole("role").notNull().default("editor"),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+  },
+  (table) => ({
+    codeIdx: uniqueIndex("fair_invites_code_idx").on(table.code)
+  })
+);
+
 export const fairItems = pgTable("fair_items", {
   id: uuid("id").defaultRandom().primaryKey(),
   fairId: uuid("fair_id")
@@ -140,7 +160,19 @@ export const fairsRelations = relations(fairs, ({ one, many }) => ({
     references: [users.id]
   }),
   members: many(fairMembers),
+  invites: many(fairInvites),
   items: many(fairItems)
+}));
+
+export const fairInvitesRelations = relations(fairInvites, ({ one }) => ({
+  fair: one(fairs, {
+    fields: [fairInvites.fairId],
+    references: [fairs.id]
+  }),
+  creator: one(users, {
+    fields: [fairInvites.createdBy],
+    references: [users.id]
+  })
 }));
 
 export const fairItemsRelations = relations(fairItems, ({ one }) => ({

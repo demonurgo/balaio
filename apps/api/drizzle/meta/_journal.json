@@ -43,6 +43,13 @@
       "when": 1777849147201,
       "tag": "0005_crazy_ironclad",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1795452599276,
+      "tag": "0006_fair_invites",
+      "breakpoints": true
     }
   ]
 }

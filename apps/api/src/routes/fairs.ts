@@ -3,6 +3,7 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { requireUser } from "../auth/requireUser.js";
 import { db } from "../db/client.js";
+import { getMembership } from "../fairs/membership.js";
 import { fairItems, fairMembers, fairs, stockItems } from "../db/schema.js";
 import { fairRoom, type RealtimeServer } from "../realtime/index.js";
 
@@ -366,15 +367,6 @@ export async function registerFairRoutes(app: FastifyInstance, io: RealtimeServe
 }
 
 
-async function getMembership(fairId: string, userId: string) {
-  const rows = await db
-    .select({ role: fairMembers.role })
-    .from(fairMembers)
-    .where(and(eq(fairMembers.fairId, fairId), eq(fairMembers.userId, userId)))
-    .limit(1);
-
-  return rows[0] ?? null;
-}
 
 async function listFairsForUser(userId: string) {
   let userFairs = await selectUserFairs(userId);
