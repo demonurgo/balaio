@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Soporte · Balaio</title>
+    <link rel="icon" type="image/png" href="/assets/pwa/favicon-32x32.png" sizes="32x32" />
+    <style>
+      :root { --bg: #faf9f6; --surface: #f2f1ee; --border: #e5e1d8; --text: #14261f; --muted: #6b6f68; --primary: #166534; }
+      @media (prefers-color-scheme: dark) {
+        :root { --bg: #000000; --surface: #0b0d0c; --border: #26352d; --text: #fdfaea; --muted: #a8a69f; --primary: #22a55a; }
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      main { max-width: 720px; margin: 0 auto; padding: max(env(safe-area-inset-top), 32px) 20px 48px; }
+      h1 { font-size: 28px; line-height: 1.2; margin: 0 0 16px; }
+      h2 { font-size: 18px; margin: 32px 0 8px; }
+      .muted { color: var(--muted); font-size: 14px; }
+      .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+      a { color: var(--primary); }
+      .lang { margin-top: 0; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p><a href="/">← Balaio</a></p>
+      <p class="muted lang"><a href="/suporte" hreflang="pt">Português</a> · <a href="/support" hreflang="en">English</a> · Español</p>
+      <h1>Soporte</h1>
+      <!-- BORRADOR: confirmar el correo de contacto antes de publicar. -->
+      <div class="card">
+        <p>¿Dudas, problemas o sugerencias? Escribe a <a href="mailto:[correo de contacto]">[correo de contacto]</a>. Respondemos en unos pocos días hábiles.</p>
+      </div>
+
+      <h2>Preguntas frecuentes</h2>
+      <p><strong>¿Cómo comparto una lista?</strong><br />Abre la lista, toca <em>Compartir</em> y envía el enlace de invitación. Quien abra el enlace e inicie sesión podrá editar la lista contigo. El enlace es válido por 7 días.</p>
+      <p><strong>¿Cómo salgo de una lista compartida?</strong><br />Abre la lista, toca <em>Compartir</em> y elige <em>Salir de la lista</em>. El dueño de la lista también puede quitar personas.</p>
+      <p><strong>Olvidé mi contraseña.</strong><br />Todavía no hay recuperación automática. Escribe al correo de arriba desde la dirección de tu cuenta.</p>
+      <p><strong>¿Cómo elimino mi cuenta?</strong><br />En <em>Perfil → Eliminar cuenta</em>, confirmando con tu contraseña. Las listas que creaste se borran para todos; en las listas de otras personas, solo dejas de participar. Consulta la <a href="/privacidad">política de privacidad</a>.</p>
+    </main>
+  </body>
+</html>

@@ -17,9 +17,9 @@
 	}
 	handle {
 		root * /srv
-		@nocache path /sw.js /index.html /manifest.webmanifest /privacidade.html /suporte.html
+		@nocache path /sw.js /index.html /manifest.webmanifest /privacidade.html /suporte.html /privacy.html /support.html /privacidad.html /soporte.html
 		header @nocache Cache-Control "no-cache"
-		# /privacidade e /suporte são páginas estáticas; o resto cai no PWA.
+		# /privacidade, /suporte e as versões em inglês (/privacy, /support) e espanhol (/privacidad, /soporte) são páginas estáticas; o resto cai no PWA.
 		try_files {path} {path}.html /index.html
 		file_server
 	}

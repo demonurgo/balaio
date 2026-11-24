@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Support · Balaio</title>
+    <link rel="icon" type="image/png" href="/assets/pwa/favicon-32x32.png" sizes="32x32" />
+    <style>
+      :root { --bg: #faf9f6; --surface: #f2f1ee; --border: #e5e1d8; --text: #14261f; --muted: #6b6f68; --primary: #166534; }
+      @media (prefers-color-scheme: dark) {
+        :root { --bg: #000000; --surface: #0b0d0c; --border: #26352d; --text: #fdfaea; --muted: #a8a69f; --primary: #22a55a; }
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      main { max-width: 720px; margin: 0 auto; padding: max(env(safe-area-inset-top), 32px) 20px 48px; }
+      h1 { font-size: 28px; line-height: 1.2; margin: 0 0 16px; }
+      h2 { font-size: 18px; margin: 32px 0 8px; }
+      .muted { color: var(--muted); font-size: 14px; }
+      .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+      a { color: var(--primary); }
+      .lang { margin-top: 0; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p><a href="/">← Balaio</a></p>
+      <p class="muted lang"><a href="/suporte" hreflang="pt">Português</a> · English · <a href="/soporte" hreflang="es">Español</a></p>
+      <h1>Support</h1>
+      <!-- DRAFT: confirm the contact email before publishing. -->
+      <div class="card">
+        <p>Questions, problems or suggestions? Write to <a href="mailto:[contact email]">[contact email]</a>. We reply within a few business days.</p>
+      </div>
+
+      <h2>Frequently asked questions</h2>
+      <p><strong>How do I share a list?</strong><br />Open the list, tap <em>Share</em> and send the invite link. Whoever opens the link and signs in can edit the list with you. The link is valid for 7 days.</p>
+      <p><strong>How do I leave a shared list?</strong><br />Open the list, tap <em>Share</em> and choose <em>Leave list</em>. The list's owner can also remove people.</p>
+      <p><strong>I forgot my password.</strong><br />There is no automatic recovery yet. Write to the email above from your account's address.</p>
+      <p><strong>How do I delete my account?</strong><br />Go to <em>Profile → Delete account</em> and confirm with your password. The lists you created are deleted for everyone; on other people's lists, you just leave. See the <a href="/privacy">privacy policy</a>.</p>
+    </main>
+  </body>
+</html>
