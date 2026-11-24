@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Política de privacidad · Balaio</title>
+    <link rel="icon" type="image/png" href="/assets/pwa/favicon-32x32.png" sizes="32x32" />
+    <style>
+      :root { --bg: #faf9f6; --surface: #f2f1ee; --border: #e5e1d8; --text: #14261f; --muted: #6b6f68; --primary: #166534; }
+      @media (prefers-color-scheme: dark) {
+        :root { --bg: #000000; --surface: #0b0d0c; --border: #26352d; --text: #fdfaea; --muted: #a8a69f; --primary: #22a55a; }
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      main { max-width: 720px; margin: 0 auto; padding: max(env(safe-area-inset-top), 32px) 20px 48px; }
+      h1 { font-size: 28px; line-height: 1.2; margin: 0 0 4px; }
+      h2 { font-size: 18px; margin: 32px 0 8px; }
+      p, li { color: var(--text); }
+      .muted { color: var(--muted); font-size: 14px; }
+      .draft { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; font-size: 14px; }
+      a { color: var(--primary); }
+      ul { padding-left: 20px; }
+      .lang { margin-top: 0; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p><a href="/">← Balaio</a></p>
+      <p class="muted lang"><a href="/privacidade" hreflang="pt">Português</a> · <a href="/privacy" hreflang="en">English</a> · Español</p>
+      <h1>Política de privacidad</h1>
+      <p class="muted">Última actualización: 23 de noviembre de 2026</p>
+      <!-- BORRADOR: revisar el texto, el correo de contacto y la ubicación del servidor antes de publicar. -->
+      <p class="draft">Borrador para revisión. Las partes entre corchetes todavía deben confirmarse.</p>
+
+      <p>Balaio es una lista de compras mensual que se puede compartir con otras personas en tiempo real, disponible en <a href="https://balaio.demonurgo.com">balaio.demonurgo.com</a> y en la app para iPhone. Esta política explica qué datos guarda Balaio, para qué y cómo puedes borrarlos. Sigue la Ley General de Protección de Datos de Brasil (LGPD, Ley 13.709/2018) y, cuando te correspondan, las leyes de protección de datos de tu país, como el RGPD de la Unión Europea.</p>
+
+      <h2>Quién cuida tus datos</h2>
+      <p>Balaio lo mantiene un desarrollador independiente, [nombre del responsable], que es el responsable del tratamiento de los datos. Contacto: <a href="mailto:[correo de contacto]">[correo de contacto]</a>.</p>
+
+      <h2>Datos que recopilamos</h2>
+      <ul>
+        <li><strong>Cuenta:</strong> nombre, apellido, fecha de nacimiento, correo y contraseña. La contraseña se guarda solo como hash (Argon2); nadie puede leerla.</li>
+        <li><strong>Foto de perfil</strong>, si eliges una.</li>
+        <li><strong>Contenido que creas:</strong> listas, presupuestos, artículos, cantidades, precios, categorías, notas, fotos de artículos y tu despensa.</li>
+        <li><strong>Participación en listas compartidas:</strong> en qué listas participas y quién cambió cada artículo.</li>
+        <li><strong>Datos técnicos</strong> necesarios para que el servicio funcione, como la dirección IP en los registros del servidor, usados para la seguridad y para limitar los intentos de inicio de sesión.</li>
+      </ul>
+
+      <h2>Para qué los usamos</h2>
+      <p>Solo para que Balaio funcione: iniciar tu sesión, guardar y sincronizar tus listas, mostrar los cambios en tiempo real a quienes participan en la misma lista y proteger el servicio contra abusos. La base legal es la prestación del servicio que pediste al crear tu cuenta.</p>
+      <p>Balaio no tiene anuncios, no vende datos, no te rastrea entre apps o sitios web y no usa herramientas de análisis de terceros.</p>
+
+      <h2>Con quién se comparten los datos</h2>
+      <ul>
+        <li><strong>Personas de la misma lista:</strong> cuando entras en una lista compartida por invitación, las demás personas ven tu nombre, tu foto de perfil y el contenido de la lista. Tu correo y tu fecha de nacimiento no se les muestran.</li>
+        <li><strong>Alojamiento:</strong> los datos están en un servidor contratado a Hetzner Online GmbH [confirmar ubicación del servidor], que solo los almacena y procesa en nuestro nombre.</li>
+        <li><strong>Autoridades:</strong> solo cuando la ley lo exija.</li>
+      </ul>
+
+      <h2>Cookies y almacenamiento en el dispositivo</h2>
+      <p>El sitio usa una sola cookie de sesión, necesaria para mantenerte conectado. La app para iPhone guarda el token de acceso en el Llavero (Keychain) del dispositivo. No usamos cookies de publicidad ni de análisis.</p>
+
+      <h2>Cuánto tiempo los guardamos</h2>
+      <p>Mientras tu cuenta exista. Si eliminas tu cuenta, los datos se borran al instante de la base de datos activa. Las copias de seguridad, si las hay, se sobrescriben en un plazo de [plazo] días.</p>
+
+      <h2>Cómo eliminar tu cuenta</h2>
+      <p>En la app o en el sitio, abre <strong>Perfil → Eliminar cuenta</strong> y confirma con tu contraseña. Esto borra:</p>
+      <ul>
+        <li>tu cuenta, tu foto y tu despensa;</li>
+        <li>las listas que creaste, para todas las personas que participaban en ellas;</li>
+        <li>tu participación en las listas de otras personas (los artículos que agregaste en ellas se mantienen, sin tu nombre).</li>
+      </ul>
+      <p>Si no puedes entrar en tu cuenta, pide la eliminación por el correo de contacto.</p>
+
+      <h2>Tus derechos</h2>
+      <p>Puedes pedir la confirmación de que tratamos tus datos, y el acceso, la corrección, la portabilidad, la eliminación e información sobre con quién se comparten. Gran parte de esto lo haces en la propia app (editar perfil y eliminar cuenta); para lo demás, escribe al correo de contacto. También puedes presentar un reclamo ante la Autoridad Nacional de Protección de Datos de Brasil (ANPD) o ante la autoridad de protección de datos de tu país.</p>
+
+      <h2>Niños</h2>
+      <p>Balaio no está dirigido a niños. [Definir una edad mínima para crear una cuenta, si la hay.]</p>
+
+      <h2>Seguridad</h2>
+      <p>La comunicación siempre está cifrada (HTTPS), las contraseñas se guardan como hash y el acceso al servidor está restringido. Ningún sistema es perfectamente seguro; si ocurre un incidente que te afecte, te avisaremos según lo exija la ley.</p>
+
+      <h2>Cambios en esta política</h2>
+      <p>Si esta política cambia, se actualizará la fecha de arriba y, en cambios importantes, te avisaremos en la app.</p>
+
+      <p class="muted"><a href="/soporte">Soporte</a></p>
+    </main>
+  </body>
+</html>
