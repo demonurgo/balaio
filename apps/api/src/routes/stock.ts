@@ -18,7 +18,8 @@ const stockItemUpdateSchema = z.object({
   unitPrice: z.number().min(0).max(999999).optional(),
   category: z.string().trim().max(80).nullable().optional(),
   notes: z.string().trim().max(4000).nullable().optional(),
-  imageUrl: z.string().max(1_500_000).nullable().optional()
+  imageUrl: z.string().max(1_500_000).nullable().optional(),
+  lowStockThreshold: z.number().min(0).max(9999).nullable().optional()
 });
 
 type DbStockItem = typeof stockItems.$inferSelect;
@@ -85,6 +86,9 @@ export async function registerStockRoutes(app: FastifyInstance, io: RealtimeServ
     if (parsed.data.unitPrice !== undefined) patch.unitPrice = toDbNumber(parsed.data.unitPrice);
     if (parsed.data.category !== undefined) patch.category = parsed.data.category;
     if (parsed.data.notes !== undefined) patch.notes = parsed.data.notes;
+    if (parsed.data.lowStockThreshold !== undefined) {
+      patch.lowStockThreshold = parsed.data.lowStockThreshold === null ? null : toDbNumber(parsed.data.lowStockThreshold);
+    }
     const imageUrl = resolveImageInput(parsed.data.imageUrl);
     if (imageUrl !== undefined) patch.imageUrl = imageUrl;
 
@@ -235,6 +239,7 @@ function toStockDto(item: DbStockItem, fairName: string | null, consumedByName: 
     notes: item.notes,
     imageUrl: imageLink("stock", item.id, item.imageUrl, item.updatedAt),
     status: item.status,
+    lowStockThreshold: item.lowStockThreshold === null ? null : toNumber(item.lowStockThreshold),
     sourceFairId: item.sourceFairId,
     sourceFairItemId: item.sourceFairItemId,
     sourceFairName: fairName,

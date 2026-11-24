@@ -50,6 +50,13 @@
       "when": 1795452599276,
       "tag": "0006_fair_invites",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1795550838668,
+      "tag": "0007_stock_low_threshold",
+      "breakpoints": true
     }
   ]
 }

@@ -136,6 +136,8 @@ export const stockItems = pgTable(
     category: varchar("category", { length: 80 }),
     notes: text("notes"),
     imageUrl: text("image_url"),
+    // Avisar quando a quantidade chegar a este valor ou menos (nulo = sem aviso).
+    lowStockThreshold: numeric("low_stock_threshold", { precision: 10, scale: 2 }),
     status: stockStatus("status").notNull().default("in_stock"),
     consumedBy: uuid("consumed_by").references(() => users.id, { onDelete: "set null" }),
     consumedAt: timestamp("consumed_at", { withTimezone: true }),
